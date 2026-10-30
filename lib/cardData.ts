@@ -296,7 +296,7 @@ export const cardData: Card[] = [
     type: "wildcard",
     name: "Wild Property",
     value: 4,
-    colours: ["railroad", "utility"],
+    colours: ["railroad", "green"],
     image: "/cards/black-green-wild-property.png",
   },
   {
@@ -304,7 +304,7 @@ export const cardData: Card[] = [
     type: "wildcard",
     name: "Wild Property",
     value: 4,
-    colours: ["railroad", "utility"],
+    colours: ["railroad", "lightBlue"],
     image: "/cards/black-light-blue-wild-property.png",
   },
   {
@@ -634,7 +634,7 @@ export const cardData: Card[] = [
     type: "action",
     name: "Hotel",
     value: 4,
-    action: "house",
+    action: "hotel",
     image: "/cards/hotel.png",
   },
 ];

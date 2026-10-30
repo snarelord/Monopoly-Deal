@@ -10,10 +10,13 @@ export function shuffleDeck(cards: Card[]): Card[] {
   return deck;
 }
 
-export function beginGame() {
+export function beginGame(playerCount = 2) {
   const deck = shuffleDeck(cardData);
-  return {
-    hand: deck.slice(0, 5), // first five cards
-    deck: deck.slice(5),    // the rest is the draw pile
-  };
+  const players = Array.from({ length: playerCount }, (_, i) => ({
+    id: i,
+    hand: deck.splice(0, 5), // removes 5 from the deck and returns them
+    bank: [],
+    properties: [],
+  }));
+  return { players, deck, discardPile: [] };
 }

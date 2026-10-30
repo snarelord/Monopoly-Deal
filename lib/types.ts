@@ -70,3 +70,10 @@ export interface GameState {
   actionCards: Card[];
   message?: string;
 }
+
+export interface OpponentView {
+  id: number;
+  handCount: number;
+  bank: Card[];
+  properties: PropertySet[];
+}

@@ -22,8 +22,9 @@ jobs:
         with:
           build: npm run build
           start: npm start
-          wait-on: "http://localhost:3000"
+          wait-on: "http://127.0.0.1:3000"
           wait-on-timeout: 120
+          config: baseUrl=http://127.0.0.1:3000
 
       - name: Upload screenshots on failure
         if: failure()

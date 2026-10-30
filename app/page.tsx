@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { beginGame } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
-import type { OpponentView } from "@/lib/types";
-
-type Game = ReturnType<typeof beginGame>;
+import type { OpponentView, GameState } from "@/lib/types";
 
 export default function Home() {
-  const [game, setGame] = useState<Game | null>(null);
+  const [game, setGame] = useState<GameState | null>(null);
 
   useEffect(() => {
     setGame(beginGame());
@@ -16,7 +14,9 @@ export default function Home() {
 
   if (!game) return null;
 
-  const [me, ...others] = game.players;
+  const currentPlayer = game.players[game.currentPlayerIndex];
+  const me = game.players[0];
+  const others = game.players.filter((player) => player.id !== me.id);
 
   const opponents: OpponentView[] = others.map((p) => ({
     id: p.id,
@@ -25,18 +25,45 @@ export default function Home() {
     properties: p.properties,
   }));
 
+  function handleDraw() {
+    setGame((currentGame) => {
+      if (!currentGame) return currentGame;
+      if (currentGame.hasDrawnCards) return currentGame;
+      if (currentGame.deck.length === 0) return currentGame;
+
+      const cardsToDraw = currentGame.deck.slice(0, 2);
+      const remainingDeck = currentGame.deck.slice(2);
+      const currentPlayerId = currentGame.players[currentGame.currentPlayerIndex].id;
+
+      const players = currentGame.players.map((player) =>
+        player.id === currentPlayerId
+          ? { ...player, hand: [...player.hand, ...cardsToDraw] }
+          : player
+      );
+
+      return {
+        ...currentGame,
+        players,
+        deck: remainingDeck,
+        hasDrawnCards: true,
+      };
+    })
+  }
+
   return (
-    <main className="p-6">
+    <main className="relative">
       <GameBoard
         me={me}
         opponents={opponents}
         drawPileCount={game.deck.length}
         discardPile={game.discardPile}
         currentPlayerId={me.id}
+        onDraw={handleDraw}
+        hasDrawnCards={game.hasDrawnCards}
       />
 
       <button
-        className="cursor-pointer mt-8 border-2 p-2 border-black text-black"
+        className="fixed left-4 top-4 z-50 cursor-pointer border-2 text-black p-2"
         onClick={() => setGame(beginGame())}
       >
         Deal again

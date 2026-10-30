@@ -69,6 +69,7 @@ export interface GameState {
   hasDrawnCards: boolean;
   actionCards: Card[];
   message?: string;
+  discardPile: Card[],
 }
 
 export interface OpponentView {

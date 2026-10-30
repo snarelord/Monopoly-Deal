@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { beginGame } from "@/lib/gameHelpers";
+import GameBoard from "@/components/GameBoard";
+import type { OpponentView } from "@/lib/types";
 
 type Game = ReturnType<typeof beginGame>;
 
@@ -14,22 +16,31 @@ export default function Home() {
 
   if (!game) return null;
 
+  const [me, ...others] = game.players;
+
+  const opponents: OpponentView[] = others.map((p) => ({
+    id: p.id,
+    handCount: p.hand.length,
+    bank: p.bank,
+    properties: p.properties,
+  }));
+
   return (
-    <main style={{ padding: 24 }}>
-      <h1 className="mb-6">Monopoly Deal</h1>
+    <main className="p-6">
+      <GameBoard
+        me={me}
+        opponents={opponents}
+        drawPileCount={game.deck.length}
+        discardPile={game.discardPile}
+        currentPlayerId={me.id}
+      />
 
-      <h2 className="mb-2">Your hand</h2>
-      <ul className="grid h-56 grid-cols-5 content-start">
-        {game.hand.map((card) => (
-          <div key={card.id} className="">
-            <img src={card.image} className="max-w-24"></img>
-          </div>
-        ))}
-      </ul>
-
-      <p>Cards left in deck: {game.deck.length}</p>
-
-      <button className="cursor-pointer mt-8 border-2 p-2" onClick={() => setGame(beginGame())}>Deal again</button>
+      <button
+        className="cursor-pointer mt-8 border-2 p-2"
+        onClick={() => setGame(beginGame())}
+      >
+        Deal again
+      </button>
     </main>
   );
 }

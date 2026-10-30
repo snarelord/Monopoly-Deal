@@ -9,22 +9,38 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - name: Run Cypress
+      - run: npm ci
+      - run: npm run build
+
+      - name: Start server
+        run: npm start > server.log 2>&1 &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:3000; then
+              echo "server up after $i tries"; exit 0
+            fi
+            sleep 2
+          done
+          echo "server never answered"; cat server.log; exit 1
+
+      - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
-          build: npm run build
-          start: npm start
-          wait-on: "http://127.0.0.1:3000"
-          wait-on-timeout: 120
+          install: false
           config: baseUrl=http://127.0.0.1:3000
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat server.log
 
       - name: Upload screenshots on failure
         if: failure()

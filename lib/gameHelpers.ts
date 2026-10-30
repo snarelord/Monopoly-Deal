@@ -1,4 +1,4 @@
-import type { Card } from "@/lib/types";
+import type { Card, GameState } from "@/lib/types";
 import { cardData } from "@/lib/cardData";
 
 export function shuffleDeck(cards: Card[]): Card[] {
@@ -10,7 +10,7 @@ export function shuffleDeck(cards: Card[]): Card[] {
   return deck;
 }
 
-export function beginGame(playerCount = 2) {
+export function beginGame(playerCount = 2): GameState {
   const deck = shuffleDeck(cardData);
   const players = Array.from({ length: playerCount }, (_, i) => ({
     id: i,
@@ -18,5 +18,16 @@ export function beginGame(playerCount = 2) {
     bank: [],
     properties: [],
   }));
-  return { players, deck, discardPile: [] };
+  return {
+    players,
+    deck,
+    discardPile: [],
+    currentPlayerIndex: 0,
+    cardsPlayed: 0,
+    isGameOver: false,
+    winner: null,
+    actionInProgress: null,
+    hasDrawnCards: false,
+    actionCards: [],
+  };
 }

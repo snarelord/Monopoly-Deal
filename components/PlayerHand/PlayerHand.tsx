@@ -30,8 +30,8 @@ export default function PlayerHand({ cards }: { cards: CardType[] }) {
   }, [previewCard]);
 
   return (
-    <>
-      <ul data-cy="my-hand" className="mt-32 relative mx-auto h-64 w-full max-w-3xl">
+    <div className="mb-5">
+      <ul data-cy="my-hand" className="relative mx-auto h-64 w-full max-w-3xl">
         {cards.map((card, i) => (
           <li
             key={card.id}
@@ -52,13 +52,13 @@ export default function PlayerHand({ cards }: { cards: CardType[] }) {
         ))}
       </ul>
 
-      <FanControls
-        minDegrees={MIN_DEGREES}
-        maxDegrees={MAX_DEGREES}
-        degreeStep={DEGREE_STEP}
-        degreesBetweenCards={degreesBetweenCards}
-        setDegreesBetweenCards={setDegreesBetweenCards}
-      />
+        <FanControls
+          minDegrees={MIN_DEGREES}
+          maxDegrees={MAX_DEGREES}
+          degreeStep={DEGREE_STEP}
+          degreesBetweenCards={degreesBetweenCards}
+          setDegreesBetweenCards={setDegreesBetweenCards}
+        />
 
       {previewCard && (
         <div className="card-preview">
@@ -78,6 +78,6 @@ export default function PlayerHand({ cards }: { cards: CardType[] }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

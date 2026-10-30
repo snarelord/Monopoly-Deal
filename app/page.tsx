@@ -36,7 +36,7 @@ export default function Home() {
       />
 
       <button
-        className="cursor-pointer mt-8 border-2 p-2"
+        className="cursor-pointer mt-8 border-2 p-2 border-black text-black"
         onClick={() => setGame(beginGame())}
       >
         Deal again

@@ -62,6 +62,17 @@ export const canBuild = (set: PropertySet, building: "house" | "hotel") =>
 export const buildableColours = (sets: PropertySet[], building: "house" | "hotel"): Colour[] =>
   [...new Set(sets.filter((s) => canBuild(s, building)).map((s) => s.colour))];
 
+// colours a wildcard in your pile can be moved to: a two colour one to its other colour,
+// the any colour one only into another set you've started
+export function wildcardMoves(sets: PropertySet[], cardId: string): Colour[] {
+  const from = sets.find((s) => s.cards.some((c) => c.id === cardId));
+  const card = from?.cards.find((c) => c.id === cardId);
+  if (!from || card?.type !== "wildcard") return [];
+  if (card.colours !== "any") return card.colours.filter((c) => c !== from.colour);
+  const others = sets.filter((s) => s !== from);
+  return openSetColours(others).filter((c) => c !== from.colour);
+}
+
 // colours a player has a complete set of. two complete sets of the same colour only count once
 export const completeColours = (player: Player): Colour[] =>
   [...new Set(player.properties.filter(isComplete).map((s) => s.colour))];
@@ -159,7 +170,8 @@ export type Move =
   // when several players have said no to them (birthday, two colour rent)
   | { type: "just-say-no"; cardId: string; debtorId?: number }
   | { type: "accept"; debtorId?: number }
-  | { type: "build"; cardId: string; colour: Colour };
+  | { type: "build"; cardId: string; colour: Colour }
+  | { type: "move-wildcard"; cardId: string; colour: Colour }; // free, on your turn
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 

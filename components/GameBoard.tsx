@@ -88,7 +88,15 @@ export default function GameBoard({
 
         <div className="relative order-3 min-h-[clamp(13rem,36dvh,26rem)] md:order-0">
           <div className="absolute inset-0">
-            <PropertyPile playerId={me.id} sets={me.properties} />
+            <PropertyPile
+              playerId={me.id}
+              sets={me.properties}
+              onMoveWildcard={
+                me.id === turn.currentPlayerId && !turn.pendingCard && turn.winnerId === null
+                  ? (cardId, colour) => onMove({ type: "move-wildcard", cardId, colour })
+                  : undefined
+              }
+            />
           </div>
         </div>
       </div>

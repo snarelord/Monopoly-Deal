@@ -1,7 +1,7 @@
 import { applyMove, beginGame } from "../../lib/gameHelpers";
 import { drawCards, findSeed } from "../support/dealHelper";
 import { cardData } from "../../lib/cardData";
-import type { Card, Colour, GameState, Move } from "../../lib/types";
+import type { ActionCard, Card, Colour, GameState, Move, PropertySet } from "../../lib/types";
 
 const card = (id: string) => cardData.find((c) => c.id === id)!;
 const wild = (colours: [Colour, Colour] | "any") =>
@@ -84,6 +84,71 @@ describe("Wildcards", () => {
   });
 });
 
+describe("Moving wildcards", () => {
+  const set = (colour: Colour, ...ids: string[]): PropertySet =>
+    ({ colour, cards: ids.map(card) as PropertySet["cards"], house: null, hotel: null });
+  const owning = (...properties: PropertySet[]): GameState => {
+    const game = holding();
+    return { ...game, players: game.players.map((p) => (p.id === 0 ? { ...p, properties } : p)) };
+  };
+  const sets = (game: GameState) =>
+    game.players[0].properties.map((s) => `${s.colour}:${s.cards.map((c) => c.id).join(",")}`);
+  const move = (cardId: string, colour: Colour): Move => ({ type: "move-wildcard", cardId, colour });
+
+  it("switches a two colour wildcard to its other colour without using a play", () => {
+    const after = play(owning(set("orange", "wildcard-orange-pink-1")), move("wildcard-orange-pink-1", "pink"));
+    expect(sets(after)).to.deep.equal(["pink:wildcard-orange-pink-1"]);
+    expect(after.cardsPlayed).to.equal(0);
+  });
+
+  it("joins an unfinished set of the new colour", () => {
+    const game = owning(set("orange", "property-vine-street", "wildcard-orange-pink-1"), set("pink", "property-pall-mall"));
+    expect(sets(play(game, move("wildcard-orange-pink-1", "pink")))).to.deep.equal([
+      "orange:property-vine-street",
+      "pink:property-pall-mall,wildcard-orange-pink-1",
+    ]);
+  });
+
+  it("only moves the any colour wildcard into a set you've started", () => {
+    const game = owning(set("darkBlue", "property-park-lane", "wildcard-any-1"), set("pink", "property-pall-mall"));
+    expect(attempt(game, move("wildcard-any-1", "green")).ok).to.equal(false);
+    expect(sets(play(game, move("wildcard-any-1", "pink")))).to.deep.equal([
+      "darkBlue:property-park-lane",
+      "pink:property-pall-mall,wildcard-any-1",
+    ]);
+  });
+
+  it("refuses a colour the wildcard doesn't have, or the one it's already", () => {
+    const game = owning(set("orange", "wildcard-orange-pink-1"));
+    expect(attempt(game, move("wildcard-orange-pink-1", "green")).ok).to.equal(false);
+    expect(attempt(game, move("wildcard-orange-pink-1", "orange")).ok).to.equal(false);
+  });
+
+  it("can only be done on your own turn", () => {
+    const game = owning(set("orange", "wildcard-orange-pink-1"));
+    expect(applyMove(game, 1, move("wildcard-orange-pink-1", "pink")).ok).to.equal(false);
+  });
+
+  it("sends the buildings to the bank when it breaks a complete set", () => {
+    const house = card("house-1") as ActionCard;
+    const lightBlue = set("lightBlue", "property-euston-road", "property-pentonville-road", "wildcard-brown-light-blue-1");
+    const after = play(owning({ ...lightBlue, house }), move("wildcard-brown-light-blue-1", "brown"));
+
+    expect(after.players[0].properties.find((s) => s.colour === "lightBlue")?.house).to.equal(null);
+    expect(after.players[0].bank.map((c) => c.id)).to.include("house-1");
+  });
+
+  it("can complete a third set and win", () => {
+    const game = owning(
+      set("brown", "property-old-kent-road", "property-whitechapel-road"),
+      set("darkBlue", "property-park-lane", "property-mayfair"),
+      set("orange", "property-vine-street", "property-bow-street"),
+      set("pink", "wildcard-orange-pink-1"),
+    );
+    expect(play(game, move("wildcard-orange-pink-1", "orange")).winnerId).to.equal(0);
+  });
+});
+
 describe("Wildcards in the property pile", () => {
   const isTwoColourWild = (c: Card) => c.type === "wildcard" && c.colours !== "any";
   const seed = findSeed((hand) => hand.some(isTwoColourWild));
@@ -114,5 +179,22 @@ describe("Wildcards in the property pile", () => {
   it("turns upside down when played as its second colour", () => {
     placeWildAs(1);
     cy.get("@placed").should("have.attr", "data-flipped", "true");
+  });
+
+  it("can be moved to its other colour from the property pile, without using a play", () => {
+    placeWildAs(0);
+    cy.get("@placed").find("[data-card-id]").invoke("attr", "data-card-id").then((id) => {
+      const w = card(id!) as Extract<Card, { type: "wildcard" }>;
+      const other = (w.colours as [Colour, Colour])[1];
+
+      cy.get("@placed").find("button").click();
+      cy.get(`[data-cy="move-colour-${other}"]`).click();
+
+      cy.get('[data-cy="wildcard-mover"]').should("not.exist");
+      cy.get(`[data-cy="property-set"][data-colour="${other}"] [data-card-id="${id}"]`)
+        .closest("li")
+        .should("have.attr", "data-flipped", "true");
+      cy.get('[data-cy="turn-info"]').should("have.attr", "data-plays-left", "2"); // only the placing used a play
+    });
   });
 });

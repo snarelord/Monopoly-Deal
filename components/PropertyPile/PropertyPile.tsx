@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Card as CardType, Colour, PropertySet } from "@/lib/types";
-import { SETS, isComplete } from "@/lib/types";
-import { COLOUR_STYLES } from "../colourStyles";
+import { SETS, isComplete, wildcardMoves } from "@/lib/types";
+import { COLOUR_STYLES, colourName } from "../colourStyles";
 import Card from "@/components/Card";
 import CardPreview from "../PlayerHand/CardPreview";
 
@@ -19,10 +19,12 @@ const isFlipped = (card: CardType, setColour: Colour) =>
 interface PropertyPileProps {
   playerId: number;
   sets: PropertySet[];
+  onMoveWildcard?: (cardId: string, colour: Colour) => void; // left out when wildcards can't be moved right now
 }
 
-export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
+export default function PropertyPile({ playerId, sets, onMoveWildcard }: PropertyPileProps) {
   const [preview, setPreview] = useState<{ card: CardType; flipped: boolean } | null>(null);
+  const [moving, setMoving] = useState<{ card: CardType; colours: Colour[] } | null>(null);
 
   return (
     <div
@@ -57,16 +59,21 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
 
               {/* buildings sit on top of the set's cards, like laying them on the set in the real game */}
               <ul className="w-(--card-w)">
-                {([...set.cards, set.house, set.hotel] as (CardType | null)[]).filter((c): c is CardType => c !== null).map((card) => (
+                {([...set.cards, set.house, set.hotel] as (CardType | null)[]).filter((c): c is CardType => c !== null).map((card) => {
+                  const moves = onMoveWildcard ? wildcardMoves(sets, card.id) : [];
+                  return (
                   <li
                     key={card.id}
                     data-flipped={isFlipped(card, set.colour)}
                     data-building={card.type === "action" ? card.action : undefined}
+                    data-movable={moves.length > 0}
                     className="relative h-(--peek) transition-[filter] last:h-auto hover:z-10 hover:drop-shadow-lg"
                   >
                     <button
                       type="button"
-                      className="block p-0"
+                      className={`block p-0 ${moves.length ? "cursor-pointer" : "cursor-default"}`}
+                      title={moves.length ? "Move to another colour" : undefined}
+                      onClick={() => moves.length && setMoving({ card, colours: moves })}
                       onContextMenu={(event) => {
                         event.preventDefault();
                         setPreview({ card, flipped: isFlipped(card, set.colour) });
@@ -75,10 +82,48 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
                       <Card card={card} className={`rounded ${isFlipped(card, set.colour) ? "rotate-180" : ""}`} />
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </section>
           ))}
+        </div>
+      )}
+
+      {moving && (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4">
+          <div
+            data-cy="wildcard-mover"
+            role="dialog"
+            aria-label={`Move ${moving.card.name}`}
+            className="flex w-full max-w-xs flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
+          >
+            <h2 className="text-lg font-semibold">Move {moving.card.name} to…</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {moving.colours.map((colour) => (
+                <button
+                  key={colour}
+                  type="button"
+                  data-cy={`move-colour-${colour}`}
+                  onClick={() => {
+                    onMoveWildcard?.(moving.card.id, colour);
+                    setMoving(null);
+                  }}
+                  className={`cursor-pointer rounded px-2 py-1 text-sm capitalize hover:outline hover:outline-black ${COLOUR_STYLES[colour]}`}
+                >
+                  {colourName(colour)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              data-cy="move-cancel"
+              onClick={() => setMoving(null)}
+              className="cursor-pointer self-end rounded border-2 border-black px-3 py-1"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

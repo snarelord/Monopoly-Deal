@@ -272,7 +272,7 @@ export const cardData: Card[] = [
     type: "wildcard",
     name: "Wild Property",
     value: 3,
-    colours: ["red", "yellow"],
+    colours: ["yellow", "red"],
     image: "/cards/yellow-red-wild-property.png",
   },
   {
@@ -280,7 +280,7 @@ export const cardData: Card[] = [
     type: "wildcard",
     name: "Wild Property",
     value: 3,
-    colours: ["red", "yellow"],
+    colours: ["yellow", "red"],
     image: "/cards/yellow-red-wild-property.png",
   },
   {
@@ -327,7 +327,7 @@ export const cardData: Card[] = [
     id: "wildcard-any-1",
     type: "wildcard",
     name: "Any Colour Wildcard",
-    value: 1,
+    value: 0, // worth nothing in the real rules, it can't be banked or used to pay
     colours: "any",
     image: "/cards/wild-property.png",
   },
@@ -335,7 +335,7 @@ export const cardData: Card[] = [
     id: "wildcard-any-2",
     type: "wildcard",
     name: "Any Colour Wildcard",
-    value: 1,
+    value: 0, // worth nothing in the real rules, it can't be banked or used to pay
     colours: "any",
     image: "/cards/wild-property.png",
   },

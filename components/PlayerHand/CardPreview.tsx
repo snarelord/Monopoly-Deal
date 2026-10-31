@@ -4,10 +4,11 @@ import Card from "@/components/Card";
 
 interface CardPreviewProps {
   card: CardType | null;
+  flipped?: boolean; // show it upside down, like a wildcard played as its second colour
   onClose: () => void;
 }
 
-export default function CardPreview({ card, onClose }: CardPreviewProps) {
+export default function CardPreview({ card, flipped = false, onClose }: CardPreviewProps) {
   useEffect(() => {
     if (!card) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -32,7 +33,7 @@ export default function CardPreview({ card, onClose }: CardPreviewProps) {
         aria-modal="true"
         aria-label={`Card preview: ${card.name}`}
       >
-        <Card card={card} />
+        <Card card={card} className={flipped ? "rotate-180" : ""} />
       </div>
     </div>
   );

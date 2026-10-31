@@ -5,13 +5,16 @@ import { COLOUR_STYLES } from "../colourStyles";
 import Card from "@/components/Card";
 import CardPreview from "../PlayerHand/CardPreview";
 
+const isFlipped = (card: CardType, setColour: Colour) =>
+  card.type === "wildcard" && card.colours !== "any" && card.colours[1] === setColour;
+
 interface PropertyPileProps {
   playerId: number;
   sets: PropertySet[];
 }
 
 export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
-  const [previewCard, setPreviewCard] = useState<CardType | null>(null);
+  const [preview, setPreview] = useState<{ card: CardType; flipped: boolean } | null>(null);
 
   return (
     <div
@@ -28,7 +31,6 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
       ) : (
         <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(calc(var(--card-w)+0.5rem),1fr))] content-start gap-3 overflow-y-auto">
           {sets.map((set) => (
-            // how much of each card shows the last card in a set is always shown in full
             <section
               key={set.cards[0].id}
               data-cy="property-set"
@@ -49,6 +51,7 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
                 {set.cards.map((card) => (
                   <li
                     key={card.id}
+                    data-flipped={isFlipped(card, set.colour)}
                     className="relative h-(--peek) transition-[filter] last:h-auto hover:z-10 hover:drop-shadow-lg"
                   >
                     <button
@@ -56,10 +59,10 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
                       className="block p-0"
                       onContextMenu={(event) => {
                         event.preventDefault();
-                        setPreviewCard(card);
+                        setPreview({ card, flipped: isFlipped(card, set.colour) });
                       }}
                     >
-                      <Card card={card} className="rounded" />
+                      <Card card={card} className={`rounded ${isFlipped(card, set.colour) ? "rotate-180" : ""}`} />
                     </button>
                   </li>
                 ))}
@@ -69,7 +72,11 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
         </div>
       )}
 
-      <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />
+      <CardPreview
+        card={preview?.card ?? null}
+        flipped={preview?.flipped}
+        onClose={() => setPreview(null)}
+      />
     </div>
   );
 }

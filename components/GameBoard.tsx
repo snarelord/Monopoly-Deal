@@ -48,16 +48,19 @@ export default function GameBoard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(7rem,calc(var(--card-w)*2.5+3rem))_minmax(0,1fr)_minmax(7rem,calc(var(--card-w)*2.5+3rem))]">
-        <div className="order-2 self-end md:order-0">
-          <PlayerBank playerId={me.id} cards={me.bank} />
+      {/* bank and properties are at least ~a third of the screen tall and scroll inside when full */}
+      <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(12rem,1fr)_minmax(0,1.4fr)_minmax(12rem,1fr)]">
+        <div className="relative order-2 min-h-[clamp(13rem,36dvh,26rem)] md:order-0">
+          <div className="absolute inset-0">
+            <PlayerBank playerId={me.id} cards={me.bank} />
+          </div>
         </div>
 
-        <div className="order-1 col-span-2 min-w-0 md:order-0 md:col-span-1">
+        <div className="order-1 col-span-2 min-w-0 self-end md:order-0 md:col-span-1">
           <PlayerHand cards={me.hand} turn={turn} onMove={onMove} />
         </div>
 
-        <div className="relative order-3 md:order-0">
+        <div className="relative order-3 min-h-[clamp(13rem,36dvh,26rem)] md:order-0">
           <div className="absolute inset-0">
             <PropertyPile playerId={me.id} sets={me.properties} />
           </div>

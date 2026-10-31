@@ -1,9 +1,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { Card as CardType, Colour } from "../../lib/types";
+import type { Card as CardType, Colour, Move } from "../../lib/types";
 import type { TurnStatus } from "../../lib/gameHelpers";
-import { getCardActions, type CardActionId, type CardAction } from "@/lib/cardActions";
+import { getCardActions, toMove, type CardAction } from "@/lib/cardActions";
 import Card from "@/components/Card";
 import FanControls from "./FanControls";
 import PlayerCardActions from "./PlayerCardActions"
@@ -17,11 +17,11 @@ const DEGREE_STEP = 1;
 export default function PlayerHand({
   cards,
   turn,
-  onCardAction,
+  onMove,
 }: {
   cards: CardType[];
   turn: TurnStatus;
-  onCardAction: (cardId: string, actionId: CardActionId, colour?: Colour) => void;
+  onMove: (move: Move) => void;
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -49,7 +49,9 @@ export default function PlayerHand({
   }, [selectedId]);
 
   function handleAction(card: CardType, action: CardAction, colour?: Colour) {
-    onCardAction(card.id, action.id, colour);
+    const move = toMove(card.id, action.id, colour);
+    if (move) onMove(move);
+    else console.log(`${action.id}: ${card.id} (not built yet)`);
     setSelectedId(null);
   }
 

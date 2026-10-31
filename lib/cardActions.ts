@@ -1,9 +1,5 @@
-import type { ActionType, Card, Colour } from "./types";
+import type { ActionType, Card, CardActionId, Colour, Move } from "./types";
 import { COLOURS } from "./types";
-
-export type CardActionId =
-  | "bank" | "play" | "play-on-player" | "add-to-set"
-  | "place-property" | "pay-player" | "discard";
 
 export interface CardAction {
   id: CardActionId;
@@ -70,5 +66,19 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
       const option = playOption(card.action);
       return [bank, ...(option ? [option] : []), discard];
     }
+  }
+}
+
+// turns a menu choice into a move, null means that action isn't built yet
+export function toMove(cardId: string, actionId: CardActionId, colour?: Colour): Move | null {
+  switch (actionId) {
+    case "bank":
+    case "play":
+    case "discard":
+      return { type: actionId, cardId };
+    case "place-property":
+      return { type: "place-property", cardId, colour };
+    default:
+      return null;
   }
 }

@@ -73,12 +73,23 @@ export interface GameState {
   winner: Player | null;
   actionInProgress: ActionInProgress | null;
   hasDrawnCards: boolean;
-  actionCards: Card[];
   message?: string;
-  discardPile: Card[],
+  discardPile: Card[], // played actions and discards, reshuffled into the deck when it runs out
+  seed: number; // drives every shuffle, so a seeded game replays exactly
   turnNumber: number;
   mustDiscard: boolean;
 }
+
+// everything a player can do, this is what gets sent to the server later
+export type Move =
+  | { type: "draw" }
+  | { type: "end-turn" }
+  | { type: "bank"; cardId: string }
+  | { type: "play"; cardId: string }
+  | { type: "place-property"; cardId: string; colour?: Colour }
+  | { type: "discard"; cardId: string };
+
+export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 
 export interface OpponentView {
   id: number;

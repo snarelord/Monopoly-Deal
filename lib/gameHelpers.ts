@@ -1,4 +1,4 @@
-import type { Card, GameState } from "./types";
+import type { Card, GameState, Move, MoveResult, Player } from "./types";
 import { isComplete } from "./types";
 import { cardData } from "./cardData";
 
@@ -26,9 +26,8 @@ export function shuffleDeck(cards: Card[], random: () => number = Math.random): 
   return deck;
 }
 
-export function beginGame(playerCount = 2, seed?: number): GameState {
-  const random = seed === undefined ? Math.random : mulberry32(seed);
-  const deck = shuffleDeck(cardData, random);
+export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 ** 32)): GameState {
+  const deck = shuffleDeck(cardData, mulberry32(seed));
   const players = Array.from({ length: playerCount }, (_, i) => ({
     id: i,
     hand: deck.splice(0, 5), // removes 5 from the deck and returns them
@@ -45,56 +44,92 @@ export function beginGame(playerCount = 2, seed?: number): GameState {
     winner: null,
     actionInProgress: null,
     hasDrawnCards: false,
-    actionCards: [],
     turnNumber: 1,
     mustDiscard: false,
+    seed,
   };
 }
 
-export function playToActionPile(game: GameState, playerId: number, cardId: string): GameState {
-  if (!canPlayCard(game, playerId)) return game;
+const ok = (game: GameState): MoveResult => ({ ok: true, game });
+const fail = (error: string): MoveResult => ({ ok: false, error });
+
+// the single way into the game logic: who is acting, and what they want to do
+export function applyMove(game: GameState, actorId: number, move: Move): MoveResult {
+  // TODO: just say no and paying debts happen on other players' turns, they'll need their own check
+  if (game.players[game.currentPlayerIndex].id !== actorId) return fail("It's not your turn");
+
+  switch (move.type) {
+    case "draw":
+      return drawForTurn(game);
+    case "end-turn":
+      return endTurn(game);
+    case "bank":
+      return playToBank(game, actorId, move.cardId);
+    case "play":
+      return playToActionPile(game, actorId, move.cardId);
+    case "place-property":
+      return playToProperties(game, actorId, move.cardId);
+    case "discard":
+      return discardCard(game, actorId, move.cardId);
+  }
+}
+
+// checks shared by every card played from the hand, returns the reason if it can't be played
+function findPlayable(game: GameState, playerId: number, cardId: string) {
+  const reason = getTurnStatus(game).playBlockedReason;
+  if (reason) return reason;
   const player = game.players.find((p) => p.id === playerId);
   const card = player?.hand.find((c) => c.id === cardId);
-  if (!player || !card) return game;
+  if (!player || !card) return "That card isn't in your hand";
+  return { player, card };
+}
 
-  return {
+const withoutCard = (cards: Card[], cardId: string) => cards.filter((c) => c.id !== cardId);
+
+function updatePlayer(game: GameState, playerId: number, change: (p: Player) => Player): Player[] {
+  return game.players.map((p) => (p.id === playerId ? change(p) : p));
+}
+
+function playToActionPile(game: GameState, playerId: number, cardId: string): MoveResult {
+  const found = findPlayable(game, playerId, cardId);
+  if (typeof found === "string") return fail(found);
+  const { card } = found;
+
+  return ok({
     ...game,
-    players: game.players.map((p) =>
-      p.id === playerId ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
-    ),
-    actionCards: [...game.actionCards, card],
+    players: updatePlayer(game, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, cardId) })),
+    discardPile: [...game.discardPile, card],
     cardsPlayed: game.cardsPlayed + 1,
-  };
+  });
 }
 
-export function playToBank(game: GameState, playerId: number, cardId: string): GameState {
-  if (!canPlayCard(game, playerId)) return game;
-  const player = game.players.find((p) => p.id === playerId);
-  const card = player?.hand.find((c) => c.id === cardId);
-  if (!player || !card) return game;
+function playToBank(game: GameState, playerId: number, cardId: string): MoveResult {
+  const found = findPlayable(game, playerId, cardId);
+  if (typeof found === "string") return fail(found);
+  const { card } = found;
 
   // property and wild property cards can never be banked (the menu hides it, this enforces it)
-  if (card.type === "property" || card.type === "wildcard") return game;
+  if (card.type === "property" || card.type === "wildcard") return fail("Properties can't be banked");
 
-  return {
+  return ok({
     ...game,
-    players: game.players.map((p) =>
-      p.id === playerId
-        ? { ...p, hand: p.hand.filter((c) => c.id !== cardId), bank: [...p.bank, card] }
-        : p
-    ),
+    players: updatePlayer(game, playerId, (p) => ({
+      ...p,
+      hand: withoutCard(p.hand, cardId),
+      bank: [...p.bank, card],
+    })),
     cardsPlayed: game.cardsPlayed + 1,
-  };
+  });
 }
 
-export function playToProperties(game: GameState, playerId: number, cardId: string): GameState {
-  if (!canPlayCard(game, playerId)) return game;
-  const player = game.players.find((p) => p.id === playerId);
-  const card = player?.hand.find((c) => c.id === cardId);
-  if (!player || !card) return game;
+function playToProperties(game: GameState, playerId: number, cardId: string): MoveResult {
+  const found = findPlayable(game, playerId, cardId);
+  if (typeof found === "string") return fail(found);
+  const { player, card } = found;
 
   // TODO: wild cards need a colour chosen first, which isn't built yet
-  if (card.type !== "property") return game;
+  if (card.type === "wildcard") return fail("Wildcards can't be placed yet");
+  if (card.type !== "property") return fail("Only property cards go in your property pile");
 
   const sets = [...player.properties];
   const open = sets.findIndex((s) => s.colour === card.colour && !isComplete(s));
@@ -105,16 +140,17 @@ export function playToProperties(game: GameState, playerId: number, cardId: stri
     sets.push({ colour: card.colour, cards: [card], houses: 0, hotels: 0 });
   }
 
-  return {
+  return ok({
     ...game,
-    players: game.players.map((p) =>
-      p.id === playerId
-        ? { ...p, hand: p.hand.filter((c) => c.id !== cardId), properties: sets }
-        : p
-    ),
+    players: updatePlayer(game, playerId, (p) => ({
+      ...p,
+      hand: withoutCard(p.hand, cardId),
+      properties: sets,
+    })),
     cardsPlayed: game.cardsPlayed + 1,
-  };
+  });
 }
+
 export function getTurnStatus(game: GameState) {
   const player = game.players[game.currentPlayerIndex];
   const playsLeft = Math.max(0, PLAYS_PER_TURN - game.cardsPlayed);
@@ -152,50 +188,53 @@ function advanceTurn(game: GameState): GameState {
   };
 }
 
-export function drawForTurn(game: GameState): GameState {
-  if (!getTurnStatus(game).canDraw) return game;
+function drawForTurn(game: GameState): MoveResult {
+  if (game.isGameOver) return fail("The game is over!");
+  if (game.hasDrawnCards) return fail("You've already drawn this turn");
 
   const player = game.players[game.currentPlayerIndex];
-  const drawn = game.deck.slice(0, player.hand.length === 0 ? 5 : 2);
+  const count = player.hand.length === 0 ? 5 : 2;
 
-  return {
+  // not enough to draw: shuffle the discard pile in underneath what's left
+  let { deck, discardPile } = game;
+  if (deck.length < count && discardPile.length > 0) {
+    // seed + turn number so each reshuffle is different but still replays the same
+    deck = [...deck, ...shuffleDeck(discardPile, mulberry32(game.seed + game.turnNumber))];
+    discardPile = [];
+  }
+  const drawn = deck.slice(0, count);
+
+  return ok({
     ...game,
-    players: game.players.map((p) =>
-      p.id === player.id ? { ...p, hand: [...p.hand, ...drawn] } : p
-    ),
-    deck: game.deck.slice(drawn.length),
-    hasDrawnCards: true, // set even if the deck ran dry, so the turn can still continue TODO: CHECK
-  };
+    players: updatePlayer(game, player.id, (p) => ({ ...p, hand: [...p.hand, ...drawn] })),
+    deck: deck.slice(drawn.length),
+    discardPile,
+    hasDrawnCards: true, // set even if both piles are empty, so the turn can still continue
+  });
 }
 
-export function endTurn(game: GameState): GameState {
-  if (!getTurnStatus(game).canEndTurn) return game;
+function endTurn(game: GameState): MoveResult {
+  if (game.isGameOver) return fail("The game is over!");
+  if (!game.hasDrawnCards) return fail("Draw your cards first");
+  if (game.mustDiscard) return fail("Discard down to 7 cards first");
 
   const player = game.players[game.currentPlayerIndex];
-  if (player.hand.length > HAND_LIMIT) return { ...game, mustDiscard: true };
-  return advanceTurn(game);
+  if (player.hand.length > HAND_LIMIT) return ok({ ...game, mustDiscard: true });
+  return ok(advanceTurn(game));
 }
 
-export function discardCard(game: GameState, playerId: number, cardId: string): GameState {
-  const player = game.players[game.currentPlayerIndex];
-  if (!game.mustDiscard || player.id !== playerId) return game;
+function discardCard(game: GameState, playerId: number, cardId: string): MoveResult {
+  if (!game.mustDiscard) return fail("You only discard when you end your turn with more than 7 cards");
 
+  const player = game.players[game.currentPlayerIndex];
   const card = player.hand.find((c) => c.id === cardId);
-  if (!card) return game;
+  if (!card) return fail("That card isn't in your hand");
 
   const next: GameState = {
     ...game,
-    players: game.players.map((p) =>
-      p.id === playerId ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
-    ),
+    players: updatePlayer(game, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, cardId) })),
     discardPile: [...game.discardPile, card],
   };
 
-  return player.hand.length - 1 <= HAND_LIMIT ? advanceTurn(next) : next;
-}
-
-// TODO: look at reinforcing this
-function canPlayCard(game: GameState, playerId: number) {
-  const status = getTurnStatus(game);
-  return status.playBlockedReason === null && status.currentPlayerId === playerId;
+  return ok(player.hand.length - 1 <= HAND_LIMIT ? advanceTurn(next) : next);
 }

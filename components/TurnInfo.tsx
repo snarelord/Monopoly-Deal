@@ -1,6 +1,6 @@
 import { PLAYS_PER_TURN, type TurnStatus } from "../lib/gameHelpers";
 
-export default function TurnInfo({ turn }: { turn: TurnStatus }) {
+export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveError: string | null }) {
   return (
     <div
       data-cy="turn-info"
@@ -16,6 +16,11 @@ export default function TurnInfo({ turn }: { turn: TurnStatus }) {
       {turn.mustDiscard && (
         <div data-cy="discard-prompt" className="mt-1 font-semibold text-red-700">
           Discard {turn.cardsToDiscard} card{turn.cardsToDiscard === 1 ? "" : "s"}
+        </div>
+      )}
+      {moveError && (
+        <div data-cy="move-error" className="mt-1 text-red-700">
+          {moveError}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
-import { dealtHand, findSeed } from "../support/dealHelper";
+import { dealtHand, findSeed, drawCards } from "../support/dealHelper";
+
 import type { Card } from "../../lib/types";
 
 function sameColourPair(hand: Card[]) {
@@ -25,15 +26,17 @@ describe("Property pile", () => {
   });
 
   it("starts a set when I play a property card", () => {
+    drawCards();
     playToProperties(first.id);
 
-    cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", 4);
+    cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", 6);
     cy.get(`${pile} [data-cy="property-set"]`).should("have.length", 1)
       .and("have.attr", "data-colour", (first as any).colour)
       .and("have.attr", "data-count", "1");
   });
 
   it("adds a second card of the same colour to the same set", () => {
+    drawCards();
     playToProperties(first.id);
     playToProperties(second.id);
 
@@ -42,6 +45,7 @@ describe("Property pile", () => {
   });
 
   it("stacks cards so each one's top strip is visible", () => {
+    drawCards();
     playToProperties(first.id);
     playToProperties(second.id);
 
@@ -53,6 +57,7 @@ describe("Property pile", () => {
   });
 
   it("previews a card on right-click and closes on Escape", () => {
+    drawCards();
     playToProperties(first.id);
 
     cy.get(`${pile} [data-cy="card"]`).first().rightclick({ force: true });

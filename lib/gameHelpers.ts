@@ -1,4 +1,4 @@
-import type { Card, GameState, Move, MoveResult, Player } from "./types";
+import type { Card, Colour, GameState, Move, MoveResult, Player } from "./types";
 import { isComplete } from "./types";
 import { cardData } from "./cardData";
 
@@ -68,7 +68,7 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
     case "play":
       return playToActionPile(game, actorId, move.cardId);
     case "place-property":
-      return playToProperties(game, actorId, move.cardId);
+      return playToProperties(game, actorId, move.cardId, move.colour);
     case "discard":
       return discardCard(game, actorId, move.cardId);
   }
@@ -122,22 +122,31 @@ function playToBank(game: GameState, playerId: number, cardId: string): MoveResu
   });
 }
 
-function playToProperties(game: GameState, playerId: number, cardId: string): MoveResult {
+function playToProperties(game: GameState, playerId: number, cardId: string, colour?: Colour): MoveResult {
   const found = findPlayable(game, playerId, cardId);
   if (typeof found === "string") return fail(found);
   const { player, card } = found;
 
-  // TODO: wild cards need a colour chosen first, which isn't built yet
-  if (card.type === "wildcard") return fail("Wildcards can't be placed yet");
-  if (card.type !== "property") return fail("Only property cards go in your property pile");
+  let setColour: Colour;
+  if (card.type === "property") {
+    setColour = card.colour;
+  } else if (card.type === "wildcard") {
+    if (!colour) return fail("Choose a colour for this wildcard");
+    if (card.colours !== "any" && !card.colours.includes(colour)) {
+      return fail("This wildcard can't be played as that colour");
+    }
+    setColour = colour;
+  } else {
+    return fail("Only property cards go in your property pile");
+  }
 
   const sets = [...player.properties];
-  const open = sets.findIndex((s) => s.colour === card.colour && !isComplete(s));
+  const open = sets.findIndex((s) => s.colour === setColour && !isComplete(s));
 
   if (open >= 0) {
     sets[open] = { ...sets[open], cards: [...sets[open].cards, card] };
   } else {
-    sets.push({ colour: card.colour, cards: [card], houses: 0, hotels: 0 });
+    sets.push({ colour: setColour, cards: [card], houses: 0, hotels: 0 });
   }
 
   return ok({

@@ -1,6 +1,7 @@
 "use client";
 
-import type { Card, Player, OpponentView, Move } from "../lib/types";
+import { useCallback, useState } from "react";
+import type { Card, LogEntry, Player, OpponentView, Move } from "../lib/types";
 import { TurnStatus } from "../lib/gameHelpers";
 import PlayerHand from "./PlayerHand/PlayerHand";
 import DrawPile from "./DrawPile/DrawPile";
@@ -10,15 +11,14 @@ import PropertyPile from "./PropertyPile/PropertyPile";
 import TurnInfo from "./TurnInfo";
 import PaymentPanel from "./PaymentPanel";
 import ResponsePanel from "./ResponsePanel";
+import GameLog from "./GameLog";
+import Toasts from "./Toasts";
+import { describeEntry, isAimedAt } from "./logText";
 import OpponentPanel from "./OpponentPanel";
 
 /*
   PLANNED:
   - clicking an opponent's bank or properties opens the full view (see the PLANNED notes in PlayerBank and PropertyPile)
-  - a game log feed in the empty space left of the draw/discard piles, reading GameState.log (see types.ts),
-    collapsing to just the latest entry on mobile
-  - toasts only for things aimed at you, e.g. "Player 2 said Just Say No to your Debt Collector"
-    (right now when an action is cancelled the game just carries on and nobody is told)
 */
 export interface GameBoardProps {
   me: Player;
@@ -30,6 +30,8 @@ export interface GameBoardProps {
   turn: TurnStatus,
   moveError: string | null;
   onNewGame: () => void;
+  log: LogEntry[];
+  paused: boolean; // hot-seat: the pass screen is covering the board
 }
 
 export default function GameBoard({
@@ -41,7 +43,20 @@ export default function GameBoard({
   turn,
   moveError,
   onNewGame,
+  log,
+  paused,
 }: GameBoardProps) {
+  const playerCount = opponents.length + 1;
+
+  // toasts: entries aimed at whoever's at the screen since they last saw any (tracked per player for hot-seat)
+  const [seen, setSeen] = useState<Record<number, number>>({});
+  const toasts = log
+    .map((entry, index) => ({ entry, index }))
+    .slice(seen[me.id] ?? 0)
+    .filter(({ entry }) => isAimedAt(entry, me.id))
+    .map(({ entry, index }) => ({ index, text: describeEntry(entry, me.id, playerCount) }));
+  const dismissToasts = useCallback(() => setSeen((s) => ({ ...s, [me.id]: log.length })), [me.id, log.length]);
+
   // a debt I'm paying, or one where it's my move to just say no (as the debtor) or say no back (as the one owed)
   const myDebt = turn.owing.find((debt) => debt.playerId === me.id && debt.status === "paying");
   const myResponse = turn.owing.find(
@@ -72,6 +87,9 @@ export default function GameBoard({
         >
           Deal again
         </button>
+        <div className="absolute bottom-0 left-0 top-9 hidden w-56 lg:flex">
+          <GameLog log={log} viewerId={me.id} playerCount={playerCount} />
+        </div>
         <div className="flex items-center gap-[calc(var(--card-w)*0.4)]">
           <DrawPile
             count={drawPileCount}
@@ -93,6 +111,11 @@ export default function GameBoard({
             </button>
           </div>
         </div>
+        {log.length > 0 && (
+          <p data-cy="latest-log" className="max-w-full truncate text-xs text-black/70 lg:hidden">
+            {describeEntry(log[log.length - 1], me.id, playerCount)}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(12rem,1fr)_minmax(0,1.4fr)_minmax(12rem,1fr)]">
@@ -125,6 +148,8 @@ export default function GameBoard({
           </div>
         </div>
       </div>
+
+      <Toasts toasts={toasts} paused={paused} onDismiss={dismissToasts} />
 
       {myDebt && (
         <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />

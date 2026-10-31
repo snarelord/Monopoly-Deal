@@ -134,23 +134,7 @@ export interface GameState {
   winnerId: number | null;
   pending: PendingAction | null; // while set, the game waits on the players who still owe
   hasDrawnCards: boolean;
-  /*
-    TODO PLANNED: replace this unused field with a game log, `log: LogEntry[]`, one entry per successful move.
-    structured, not strings, so the UI can render it however it likes and it's what gets broadcast online:
-      type LogEntry = { turn: number; playerId: number } & (
-        | { kind: "drew"; count: number }        // a count only, drawn cards are private
-        | { kind: "banked"; card: Card }
-        | { kind: "placed"; card: Card; colour: Colour }
-        | { kind: "played"; card: Card; targetIds: number[]; amount?: number }
-        | { kind: "said-no"; againstId: number }
-        | { kind: "paid"; toId: number; cards: Card[] }
-        | { kind: "cancelled"; card: Card; forId: number }
-        | { kind: "ended-turn" }
-      );
-    it must never hold hidden information (cards in hands, the deck order).
-    read by the log feed and toasts (GameBoard) and the hot-seat catch up (PassScreen)
-  */
-  message?: string;
+  log: LogEntry[]; // everything that's happened, oldest first
   discardPile: Card[], // played actions and discards, reshuffled into the deck when it runs out
   seed: number; // drives every shuffle, so a seeded game replays exactly
   turnNumber: number;
@@ -178,6 +162,27 @@ export type Move =
   | { type: "move-wildcard"; cardId: string; colour: Colour }; // free, on your turn
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
+
+// one thing that happened, for the game log and toasts. never anything hidden: draws are just a count
+export type LogEvent = { playerId: number } & (
+  | { kind: "drew"; count: number }
+  | { kind: "banked"; card: Card }
+  | { kind: "placed"; card: Card; colour: Colour }
+  | { kind: "built"; card: Card; colour: Colour }
+  | { kind: "moved"; card: Card; colour: Colour }
+  | { kind: "played"; card: Card; targetIds: number[]; amount?: number; colour?: Colour; doubled?: number }
+  | { kind: "said-no"; againstId: number }
+  | { kind: "cancelled"; card: Card; forId: number } // playerId's action is off for forId
+  | { kind: "paid"; toId: number; cards: Card[] } // no cards: they had nothing to pay with
+  | { kind: "took"; fromId: number; card: Card }
+  | { kind: "swapped"; withId: number; took: Card; gave: Card }
+  | { kind: "took-set"; fromId: number; colour: Colour; cards: Card[] }
+  | { kind: "discarded"; card: Card }
+  | { kind: "ended-turn" }
+  | { kind: "won" }
+);
+
+export type LogEntry = LogEvent & { turn: number };
 
 export interface OpponentView {
   id: number;

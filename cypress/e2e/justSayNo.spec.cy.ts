@@ -182,5 +182,6 @@ describe("Just Say No in the game", () => {
     cy.get('[data-cy="owing"]').should("not.exist");
     cy.get('[data-cy="bank-0"]').should("have.attr", "data-count", "0");
     cy.get('[data-cy="action-pile-count"]').should("have.text", "2");
+    cy.get('[data-cy="toast"]').should("contain.text", "Your Debt Collector was cancelled for Player 2");
   });
 });

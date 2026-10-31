@@ -13,7 +13,7 @@ export default function Card({ card, className = "" }: CardProps) {
       src={card.image}
       alt={card.name}
       draggable={false}
-      className={`block w-24 select-none ${className}`}
+      className={`block w-full select-none ${className}`}
     />
   );
 }

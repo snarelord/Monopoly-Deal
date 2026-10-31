@@ -3,8 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  /* one source of truth for card size: shrinks with the window, never above 6rem */
+  /* one source of truth for card size: shrinks with the window, between 3.5rem and 8rem */
   --card-w: clamp(3.5rem, min(7.5vw, 13dvh), 8rem);
+  /* shape of the card artwork (702 x 1089), so backs and empty slots match the faces */
+  --card-ratio: 702 / 1089;
 }
 
 @theme inline {
@@ -29,54 +31,53 @@ body {
 
 
 /* Card hand */
+/*
+  each slot shows --hand-spacing of a card (set by the fan controls),
+  and squeezes narrower if that doesn't fit, so the cards overlap instead of overflowing.
+  the card inside stays full size and spills over the next slot, the last card always shows in full
+*/
 .hand-slot {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-
-  transform-origin: 50% 250%;
-
-  transform:
-    translateX(-50%)
-    rotate(var(--rot))
-    translateY(0)
-    scale(1);
-
-  z-index: 1;
+  position: relative;
+  flex: 0 1 calc(var(--card-w) * var(--hand-spacing, 0.6));
+  min-width: 0.75rem;
 
   transition:
     transform 250ms cubic-bezier(0.2, 0.8, 0.2, 1),
     filter 250ms ease;
-
-  will-change: transform;
 }
 
-.hand-slot:hover {
-  transform:
-    translateX(-50%)
-    rotate(var(--rot))
-    translateY(-3rem)
-    scale(1.08);
-
-  z-index: 100;
-
-  filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));
+.hand-slot:last-child {
+  flex: 0 0 var(--card-w);
 }
 
-.hand-slot:hover,
+.hand-card {
+  position: relative;
+  width: var(--card-w);
+}
+
+/* raised card: selected, or hovered on devices with a real mouse */
 .hand-slot.is-selected {
-  transform:
-    translateX(-50%)
-    rotate(var(--rot))
-    translateY(calc(var(--card-w) * -0.5))   /* was -3rem */
-    scale(1.08);
+  transform: translateY(calc(var(--card-w) * -0.35));
   z-index: 100;
   filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));
+}
+
+/*
+  touch screens fake a hover on tap and it sticks, so only lift on hover with a mouse.
+  and not while a card is selected, so the action menu stays the focus
+*/
+@media (hover: hover) {
+  .hand-row:not(:has(.is-selected)) .hand-slot:hover {
+    transform: translateY(calc(var(--card-w) * -0.35));
+    z-index: 100;
+    filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));
+  }
 }
 
 /* Card button */
-.hand-slot > .card-button {
+.hand-card > .card-button {
   display: block;
+  width: 100%;
   background: none;
   border: none;
   padding: 0;
@@ -110,15 +111,13 @@ body {
 .card-preview-content {
   position: relative;
   z-index: 1;
+  /* 20rem, but never wider than the screen or taller than ~85% of it */
+  width: min(20rem, 85vw, 85dvh * 702 / 1089);
 
   animation: card-zoom-in 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .card-preview-content img {
-  display: block;
-  width: 20rem;
-  height: auto;
-
   filter: drop-shadow(0 12px 24px rgb(0 0 0 / 35%));
 }
 

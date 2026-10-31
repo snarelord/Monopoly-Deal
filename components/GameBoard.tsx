@@ -48,14 +48,16 @@ export default function GameBoard({
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(7rem,calc(var(--card-w)*2.5+3rem))_minmax(0,1fr)_minmax(7rem,calc(var(--card-w)*2.5+3rem))] items-stretch gap-4">
-        <div className="self-end">
+      <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(7rem,calc(var(--card-w)*2.5+3rem))_minmax(0,1fr)_minmax(7rem,calc(var(--card-w)*2.5+3rem))]">
+        <div className="order-2 self-end md:order-0">
           <PlayerBank playerId={me.id} cards={me.bank} />
         </div>
 
-        <PlayerHand cards={me.hand} turn={turn} onMove={onMove} />
+        <div className="order-1 col-span-2 min-w-0 md:order-0 md:col-span-1">
+          <PlayerHand cards={me.hand} turn={turn} onMove={onMove} />
+        </div>
 
-        <div className="relative">
+        <div className="relative order-3 md:order-0">
           <div className="absolute inset-0">
             <PropertyPile playerId={me.id} sets={me.properties} />
           </div>

@@ -9,10 +9,11 @@ import FanControls from "./FanControls";
 import PlayerCardActions from "./PlayerCardActions"
 import CardPreview from "./CardPreview";
 
-const DEFAULT_DEGREES = 10;
-const MIN_DEGREES = 3;
-const MAX_DEGREES = 20;
-const DEGREE_STEP = 1;
+// how much of each card shows, as a % of card width: 25 is a tight overlap, 110 is spread with a gap
+const DEFAULT_SPACING = 60;
+const MIN_SPACING = 25;
+const MAX_SPACING = 110;
+const SPACING_STEP = 15;
 
 export default function PlayerHand({
   cards,
@@ -25,8 +26,7 @@ export default function PlayerHand({
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [degreesBetweenCards, setDegreesBetweenCards] =
-    useState(DEFAULT_DEGREES);
+  const [spacing, setSpacing] = useState(DEFAULT_SPACING);
   const handRef = useRef<HTMLUListElement>(null);
   const middle = (cards.length - 1) / 2;
 
@@ -55,62 +55,57 @@ export default function PlayerHand({
     setSelectedId(null);
   }
 
-
-  console.log("blocked reason:", turn.playBlockedReason);
-
   return (
     <div className="mb-5">
+      {/* top padding leaves room for a card to lift without being cut off */}
       <ul
         ref={handRef}
         data-cy="my-hand"
-        className="relative mx-auto h-[calc(var(--card-w)*2.7)] w-full max-w-3xl"
+        className="hand-row flex w-full justify-center pt-[calc(var(--card-w)*0.4)]"
+        style={{ "--hand-spacing": spacing / 100 } as CSSProperties}
       >
         {cards.map((card, i) => {
           const isSelected = card.id === selectedId;
           return (
-            <li
-              key={card.id}
-              className={`hand-slot ${isSelected ? "is-selected" : ""}`}
-              style={
-                {
-                  "--rot": `${(i - middle) * degreesBetweenCards}deg`,
-                } as CSSProperties
-              }
-            >
-              <button
-                type="button"
-                className="card-button"
-                aria-pressed={isSelected}
-                onClick={() => setSelectedId(isSelected ? null : card.id)}
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  setPreviewCard(card);
-                }}
-              >
-                <Card card={card} />
-              </button>
+            <li key={card.id} className={`hand-slot ${isSelected ? "is-selected" : ""}`}>
+              <div className="hand-card">
+                <button
+                  type="button"
+                  className="card-button"
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedId(isSelected ? null : card.id)}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setPreviewCard(card);
+                  }}
+                >
+                  <Card card={card} className="rounded-lg" />
+                </button>
 
-              {isSelected && (
-                <PlayerCardActions
-                  actions={getCardActions(card, {
-                    playBlockedReason: turn.playBlockedReason,
-                    canDiscard: turn.mustDiscard,
-                  })}
-                  onActionClick={(action, colour) => handleAction(card, action, colour)}
-                  onClose={() => setSelectedId(null)}
-                />
-              )}
+                {isSelected && (
+                  <PlayerCardActions
+                    actions={getCardActions(card, {
+                      playBlockedReason: turn.playBlockedReason,
+                      canDiscard: turn.mustDiscard,
+                    })}
+                    // open towards the middle of the screen so it never runs off the edge
+                    side={i > middle ? "left" : "right"}
+                    onActionClick={(action, colour) => handleAction(card, action, colour)}
+                    onClose={() => setSelectedId(null)}
+                  />
+                )}
+              </div>
             </li>
           );
         })}
       </ul>
 
       <FanControls
-        minDegrees={MIN_DEGREES}
-        maxDegrees={MAX_DEGREES}
-        degreeStep={DEGREE_STEP}
-        degreesBetweenCards={degreesBetweenCards}
-        setDegreesBetweenCards={setDegreesBetweenCards}
+        minSpacing={MIN_SPACING}
+        maxSpacing={MAX_SPACING}
+        spacingStep={SPACING_STEP}
+        spacing={spacing}
+        setSpacing={setSpacing}
       />
 
       <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />

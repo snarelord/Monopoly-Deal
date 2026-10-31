@@ -8,13 +8,12 @@ interface PlayerBankProps {
 
 export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
   const total = cards.reduce((sum, card) => sum + card.value, 0);
-  console.log('playerId', playerId)
   return (
     <div
       data-cy={`bank-${playerId}`}
       data-count={cards.length}
       data-total={total}
-      className="w-72 rounded-lg border border-black/20 bg-white/60 p-3 text-black"
+      className="w-full rounded-lg border border-black/20 bg-white/60 p-3 text-black"
     >
       <div className="mb-2 flex justify-between text-sm font-semibold">
         <span>Bank</span>
@@ -28,8 +27,10 @@ export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
       ) : (
         <ul className="flex">
           {cards.map((card) => (
-            <li key={card.id} className="ml-[calc(-0.43*var(--card-w))] w-[calc(var(--card-w)*0.6)] shrink-0 first:ml-0 [&>img]:w-full">
-              <Card card={card} className="rounded" />
+            <li key={card.id} className="min-w-3 basis-[calc(var(--card-w)*0.17)] shrink last:shrink-0 last:basis-auto">
+              <div className="w-[calc(var(--card-w)*0.6)]">
+                <Card card={card} className="rounded" />
+              </div>
             </li>
           ))}
         </ul>

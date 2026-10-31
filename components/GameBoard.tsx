@@ -13,6 +13,7 @@ import PaymentPanel from "./PaymentPanel";
 import ResponsePanel from "./ResponsePanel";
 import GameLog from "./GameLog";
 import Toasts from "./Toasts";
+import GameOver from "./GameOver";
 import { describeEntry, isAimedAt } from "./logText";
 import OpponentPanel from "./OpponentPanel";
 
@@ -55,6 +56,9 @@ export default function GameBoard({
     .slice(seen[me.id] ?? 0)
     .filter(({ entry }) => isAimedAt(entry, me.id))
     .map(({ entry, index }) => ({ index, text: describeEntry(entry, me.id, playerCount) }));
+  const [showGameOver, setShowGameOver] = useState(true);
+  const everyone = [{ id: me.id, properties: me.properties, bank: me.bank }, ...opponents].sort((a, b) => a.id - b.id);
+
   const dismissToasts = useCallback(() => setSeen((s) => ({ ...s, [me.id]: log.length })), [me.id, log.length]);
 
   // a debt I'm paying, or one where it's my move to just say no (as the debtor) or say no back (as the one owed)
@@ -150,6 +154,15 @@ export default function GameBoard({
       </div>
 
       <Toasts toasts={toasts} paused={paused} onDismiss={dismissToasts} />
+
+      {turn.winnerId !== null && showGameOver && (
+        <GameOver
+          players={everyone}
+          winnerId={turn.winnerId}
+          onPlayAgain={onNewGame}
+          onClose={() => setShowGameOver(false)}
+        />
+      )}
 
       {myDebt && (
         <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />

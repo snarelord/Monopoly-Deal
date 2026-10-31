@@ -74,7 +74,7 @@ export default function GameBoard({
       data-cy="game-board"
       className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
     >
-      <div className="flex h-[clamp(8rem,22dvh,13rem)] justify-center gap-4 overflow-x-auto">
+      <div className="flex h-[clamp(8rem,22dvh,13rem)] justify-center-safe gap-4 overflow-x-auto">
         {opponents.map((opponent) => (
           <div key={opponent.id} className="h-full min-w-56 max-w-xl flex-1">
             <OpponentPanel opponent={opponent} isTheirTurn={opponent.id === turn.currentPlayerId} />

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { applyMove, beginGame, getTurnStatus, waitingOn } from "@/lib/gameHelpers";
+import { applyMove, beginGame, getTurnStatus, MAX_PLAYERS, MIN_PLAYERS, waitingOn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
+import GameSetup from "@/components/GameSetup";
 import PassScreen from "@/components/PassScreen";
 import type { OpponentView, GameState, Move } from "@/lib/types";
 
@@ -11,12 +12,29 @@ export default function Home() {
   const [moveError, setMoveError] = useState<string | null>(null);
   // HOT-SEAT ONLY: the player who last confirmed they're at the screen (see PassScreen)
   const [seatedId, setSeatedId] = useState(0);
+  const [settingUp, setSettingUp] = useState(false);
+  const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
+
+  function deal(count: number, seed?: number) {
+    setPlayerCount(count);
+    setGame(beginGame(count, seed));
+    setMoveError(null);
+    setSeatedId(0);
+    setSettingUp(false);
+  }
 
   useEffect(() => {
-    const seed = new URLSearchParams(window.location.search).get("seed");
-    setGame(beginGame(2, seed ? Number(seed) : undefined));
+    // ?seed= or ?players= deals straight away (tests rely on this), otherwise choose the players first
+    const params = new URLSearchParams(window.location.search);
+    const seed = params.get("seed");
+    const players = params.get("players");
+    if (!seed && !players) return setSettingUp(true);
+    const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
+    setPlayerCount(count);
+    setGame(beginGame(count, seed ? Number(seed) : undefined));
   }, []);
 
+  if (settingUp) return <GameSetup initialCount={playerCount} onDeal={(count) => deal(count)} />;
   if (!game) return null;
 
   const turn = getTurnStatus(game);
@@ -55,11 +73,7 @@ export default function Home() {
         turn={turn}
         moveError={moveError}
         onMove={dispatch}
-        onNewGame={() => {
-          setGame(beginGame());
-          setMoveError(null);
-          setSeatedId(0);
-        }}
+        onNewGame={() => setSettingUp(true)}
         log={game.log}
         paused={me.id !== seatedId}
       />

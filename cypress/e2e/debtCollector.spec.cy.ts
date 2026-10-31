@@ -114,6 +114,20 @@ describe("Pay automatically", () => {
     expect(autoPay(p, 4)).to.deep.equal(["money-4m-1"]);
   });
 
+  it("overpays with money rather than hand over a property", () => {
+    const p = player(money("money-5m-1"), [set("brown", "property-old-kent-road")]); // worth 1M
+    expect(autoPay(p, 1)).to.deep.equal(["money-5m-1"]);
+  });
+
+  it("uses the whole bank first, then as few properties as needed", () => {
+    // owes 3M with 1M in the bank: the 1M plus pall mall (2M), not mayfair (4M)
+    const p = player(money("money-1m-1"), [
+      set("darkBlue", "property-mayfair"),
+      set("pink", "property-pall-mall"),
+    ]);
+    expect(autoPay(p, 3).sort()).to.deep.equal(["money-1m-1", "property-pall-mall"].sort());
+  });
+
   it("hands over everything when it can't cover the debt", () => {
     expect(autoPay(player(money("money-1m-1", "money-2m-1")), 5).sort())
       .to.deep.equal(["money-1m-1", "money-2m-1"]);

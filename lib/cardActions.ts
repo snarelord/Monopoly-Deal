@@ -28,6 +28,7 @@ const TARGETED: ActionType[] = ["debt-collector", "sly-deal", "forced-deal", "de
 function playOption(action: ActionType, opponentIds: number[]): CardAction | null {
   if (TARGETED.includes(action)) return { id: "play-on-player", label: "Play against a player", targets: opponentIds };
   if (action === "pass-go") return { id: "play", label: "Play (draw 2)" };
+  if (action === "birthday") return { id: "play", label: "Play (everyone pays 2M)" };
   if (action === "house" || action === "hotel") return { id: "add-to-set", label: "Add to a set" };
   if (action === "just-say-no") return null; // only played in response, so bank or discard
   return { id: "play", label: "Play" };

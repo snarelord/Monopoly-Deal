@@ -6,6 +6,7 @@ import { cardsTotal, payableCards } from "./payment";
 export const PLAYS_PER_TURN = 3;
 export const HAND_LIMIT = 7;
 export const DEBT_COLLECTOR_AMOUNT = 5;
+export const BIRTHDAY_AMOUNT = 2;
 
 // Small deterministic random generator (mulberry32): same seed, same sequence
 function mulberry32(seed: number) {
@@ -94,7 +95,6 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
   }
 }
 
-// checks shared by every card played from the hand, returns the reason if it can't be played
 function findPlayable(game: GameState, playerId: number, cardId: string) {
   const reason = getTurnStatus(game).playBlockedReason;
   if (reason) return reason;
@@ -134,6 +134,12 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
   if (card.type === "action" && card.action === "pass-go") return ok(drawCards(played, playerId, 2));
   if (isDebtCollector) {
     return ok(startPayment(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT, status: "paying" }]));
+  }
+  if (card.type === "action" && card.action === "birthday") {
+    const debts = game.players
+      .filter((p) => p.id !== playerId)
+      .map((p): Debt => ({ playerId: p.id, amount: BIRTHDAY_AMOUNT, status: "paying" }));
+    return ok(startPayment(played, card, playerId, debts));
   }
   return ok(played);
 }

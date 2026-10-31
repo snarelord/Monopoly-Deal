@@ -76,7 +76,8 @@ export default function GameBoard({
       </div>
 
       {myDebt && (
-        <PaymentPanel me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />
+        // keyed by player so each payer starts with a fresh selection (several players can owe in turn)
+        <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />
       )}
     </div>
   );

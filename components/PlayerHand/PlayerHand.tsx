@@ -1,8 +1,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { Card as CardType } from "@/lib/types";
-import { getCardActions, type CardActionId } from "@/lib/cardActions";
+import type { Card as CardType, Colour } from "../../lib/types";
+import type { TurnStatus } from "../../lib/gameHelpers";
+import { getCardActions, type CardActionId, type CardAction } from "@/lib/cardActions";
 import Card from "@/components/Card";
 import FanControls from "./FanControls";
 import PlayerCardActions from "./PlayerCardActions"
@@ -15,10 +16,12 @@ const DEGREE_STEP = 1;
 
 export default function PlayerHand({
   cards,
+  turn,
   onCardAction,
 }: {
   cards: CardType[];
-  onCardAction: (cardId: string, actionId: CardActionId) => void;
+  turn: TurnStatus;
+  onCardAction: (cardId: string, actionId: CardActionId, colour?: Colour) => void;
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -45,10 +48,13 @@ export default function PlayerHand({
     };
   }, [selectedId]);
 
-  function handleAction(card: CardType, actionId: CardActionId) {
-    onCardAction(card.id, actionId);
+  function handleAction(card: CardType, action: CardAction, colour?: Colour) {
+    onCardAction(card.id, action.id, colour);
     setSelectedId(null);
   }
+
+
+  console.log("blocked reason:", turn.playBlockedReason);
 
   return (
     <div className="mb-5">
@@ -84,8 +90,11 @@ export default function PlayerHand({
 
               {isSelected && (
                 <PlayerCardActions
-                  actions={getCardActions(card, { handSize: cards.length })}
-                  onActionClick={(id) => handleAction(card, id)}
+                  actions={getCardActions(card, {
+                    playBlockedReason: turn.playBlockedReason,
+                    canDiscard: turn.mustDiscard,
+                  })}
+                  onActionClick={(action, colour) => handleAction(card, action, colour)}
                   onClose={() => setSelectedId(null)}
                 />
               )}

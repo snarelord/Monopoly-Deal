@@ -8,7 +8,7 @@ interface PlayerBankProps {
 
 export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
   const total = cards.reduce((sum, card) => sum + card.value, 0);
-
+  console.log('playerId', playerId)
   return (
     <div
       data-cy={`bank-${playerId}`}

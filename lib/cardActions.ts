@@ -1,4 +1,5 @@
-import type { ActionType, Card } from "@/lib/types";
+import type { ActionType, Card, Colour } from "./types";
+import { COLOURS } from "./types";
 
 export type CardActionId =
   | "bank" | "play" | "play-on-player" | "add-to-set"
@@ -9,14 +10,15 @@ export interface CardAction {
   label: string;
   disabled?: boolean;
   reason?: string; // shown as a tooltip when disabled
+  colours?: Colour[];
 }
 
 // later this grows, whose turn, phase, plays left...
 export interface ActionContext {
-  handSize: number;
+  playBlockedReason: string | null;
+  canDiscard: boolean;
 }
 
-const HAND_LIMIT = 7;
 const TARGETED: ActionType[] = ["debt-collector", "sly-deal", "forced-deal", "deal-breaker"];
 
 function playOption(action: ActionType): CardAction | null {
@@ -28,22 +30,34 @@ function playOption(action: ActionType): CardAction | null {
 }
 
 export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
-  const bank: CardAction = { id: "bank", label: "Place in bank" };
+  const play = (a: CardAction): CardAction =>
+    ctx.playBlockedReason ? { ...a, disabled: true, reason: ctx.playBlockedReason } : a;
+
+  const bank = play({ id: "bank", label: "Place in bank" });
+
   const discard: CardAction = {
     id: "discard",
     label: "Discard",
     // TODO: also require "my turn is over" once turn phases exist
-    disabled: ctx.handSize <= HAND_LIMIT,
-    reason: `Only when you hold more than ${HAND_LIMIT} cards at the end of your turn`,
+    disabled: !ctx.canDiscard,
+    reason: "Only when you have to discard down to 7 at the end of your turn",
   };
 
   switch (card.type) {
     case "money":
       // pay a player makes sense as a player will action this towards you, and you will choose what cards to pay
-      return [bank, { id: "pay-player", label: "Pay a player" }, discard];
+      return [bank, { id: "pay-player", label: "Pay a player", disabled: true}, discard];
     case "property":
+      return [play({ id: "place-property", label: "Place in property pile" }), discard];
     case "wildcard":
-      return [{ id: "place-property", label: "Place in property pile" }, discard];
+      return [
+        play({
+          id: "place-property",
+          label: "Place in property pile…",
+          colours: card.colours === "any" ? COLOURS : [...card.colours],
+        }),
+        discard,
+      ];
     case "rent":
       return [
         bank,
@@ -53,8 +67,8 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
         discard,
       ];
     case "action": {
-      const play = playOption(card.action);
-      return [bank, ...(play ? [play] : []), discard];
+      const option = playOption(card.action);
+      return [bank, ...(option ? [option] : []), discard];
     }
   }
 }

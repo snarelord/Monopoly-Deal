@@ -9,3 +9,10 @@ export function findSeed(matches: (hand: Card[]) => boolean, max = 2000): number
   if (seed === undefined) throw new Error("No seed found for that hand");
   return seed;
 }
+
+export function drawCards() {
+  cy.get('[data-cy="my-hand"] [data-cy="card"]').its("length").then((before) => {
+    cy.get('[data-cy="draw-pile"]').click();
+    cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", before + 2);
+  });
+}

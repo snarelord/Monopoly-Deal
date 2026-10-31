@@ -17,7 +17,8 @@ interface DrawPileProps {
 }
 
 export default function DrawPile({ count, onDraw, canDraw }: DrawPileProps) {
-  const cannotDraw = !canDraw || count === 0;
+  // stays clickable when empty: drawing reshuffles the discard pile in
+  const cannotDraw = !canDraw;
 
   return (
     <button

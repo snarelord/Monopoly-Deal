@@ -19,6 +19,10 @@ export type ActionType =
   | "pass-go" | "debt-collector" | "birthday" | "deal-breaker" | "sly-deal"
   | "forced-deal" | "just-say-no" | "double-the-rent" | "house" | "hotel";
 
+export type CardActionId =
+  | "bank" | "play" | "play-on-player" | "add-to-set"
+  | "place-property" | "pay-player" | "discard";
+
 interface CardBase {
   id: string;
   name: string;

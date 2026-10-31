@@ -1,16 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { beginGame, endTurn } from "@/lib/gameHelpers";
+import { beginGame, endTurn, playToActionPile } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
-import type { OpponentView, GameState } from "@/lib/types";
+import type { OpponentView, GameState, CardActionId } from "@/lib/types";
 
 export default function Home() {
   const [game, setGame] = useState<GameState | null>(null);
 
   useEffect(() => {
-    setGame(beginGame());
+    setGame(beginGame(2));
   }, []);
+
+  function handleCardAction(cardId: string, actionId: CardActionId) {
+    if (actionId !== "play") {
+      console.log(`${actionId}: ${cardId} (not built yet)`);
+      return;
+    }
+    setGame((current) => {
+      if (!current) return current;
+      const playerId = current.players[current.currentPlayerIndex].id;
+      return playToActionPile(current, playerId, cardId);
+    });
+  }
 
   if (!game) return null;
 
@@ -59,6 +71,8 @@ export default function Home() {
         currentPlayerId={me.id}
         onDraw={handleDraw}
         hasDrawnCards={game.hasDrawnCards}
+        actionPile={game.actionCards}
+        onCardAction={handleCardAction}
       />
       <div className="fixed left-4 top-4 z-50  inline-flex rounded-base shadow-xs -space-x-px" role="group">
         <button

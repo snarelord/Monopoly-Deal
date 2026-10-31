@@ -1,5 +1,5 @@
 import type { Card, GameState } from "@/lib/types";
-import { cardData } from "@/lib/cardData";
+import { cardData } from "../lib/cardData";
 
 export function shuffleDeck(cards: Card[]): Card[] {
   const deck = [...cards]; // copy, so cardData itself is never reordered
@@ -34,4 +34,19 @@ export function beginGame(playerCount = 2): GameState {
 
 export function endTurn() {
   return console.log('Turn ended')
+}
+
+export function playToActionPile(game: GameState, playerId: number, cardId: string): GameState {
+  const player = game.players.find((p) => p.id === playerId);
+  const card = player?.hand.find((c) => c.id === cardId);
+  if (!player || !card) return game;
+
+  return {
+    ...game,
+    players: game.players.map((p) =>
+      p.id === playerId ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
+    ),
+    actionCards: [...game.actionCards, card],
+    cardsPlayed: game.cardsPlayed + 1, // the three plays limit isn't enforced yet
+  };
 }

@@ -8,12 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "cypress:open": "start-server-and-test dev http://localhost:3000 \"cypress open --e2e\"",
-    "cypress:run": "start-server-and-test dev http://localhost:3000 \"cypress run --e2e\""
+    "cypress:run": "start-server-and-test dev http://localhost:3000 \"cypress run --e2e\"",
+    "db:types": "supabase gen types typescript --local > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"

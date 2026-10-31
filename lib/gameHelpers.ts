@@ -31,3 +31,7 @@ export function beginGame(playerCount = 2): GameState {
     actionCards: [],
   };
 }
+
+export function endTurn() {
+  return console.log('Turn ended')
+}

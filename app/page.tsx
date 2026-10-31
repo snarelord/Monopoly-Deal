@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { beginGame } from "@/lib/gameHelpers";
+import { beginGame, endTurn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
 import type { OpponentView, GameState } from "@/lib/types";
 
@@ -14,7 +14,6 @@ export default function Home() {
 
   if (!game) return null;
 
-  const currentPlayer = game.players[game.currentPlayerIndex];
   const me = game.players[0];
   const others = game.players.filter((player) => player.id !== me.id);
 
@@ -61,13 +60,20 @@ export default function Home() {
         onDraw={handleDraw}
         hasDrawnCards={game.hasDrawnCards}
       />
-
-      <button
-        className="fixed left-4 top-4 z-50 cursor-pointer border-2 text-black p-2"
-        onClick={() => setGame(beginGame())}
-      >
-        Deal again
-      </button>
+      <div className="fixed left-4 top-4 z-50  inline-flex rounded-base shadow-xs -space-x-px" role="group">
+        <button
+          className="cursor-pointer border-2 text-black p-2"
+          onClick={() => setGame(beginGame())}
+        >
+          Deal again
+        </button>
+        <button
+          className="cursor-pointer border-2 text-black p-2"
+          onClick={() => endTurn()} // end turn does nothing currently
+        >
+          End turn
+        </button>
+      </div>
     </main>
   );
 }

@@ -104,9 +104,16 @@ describe("Log wording and toasts", () => {
   const cancelled: LogEntry = { kind: "cancelled", playerId: 0, card: card("action-debt-collector-1"), forId: 1, turn: 3 };
 
   it("says 'you' to the player it's about", () => {
-    expect(describeEntry(paid, 0, 2)).to.equal("Player 2 paid you 5M (5M)");
-    expect(describeEntry(paid, 1, 2)).to.equal("You paid Player 1 5M (5M)");
-    expect(describeEntry(cancelled, 0, 2)).to.equal("Your Debt Collector was cancelled for Player 2");
+    const names = ["Player 1", "Player 2"];
+    expect(describeEntry(paid, 0, names)).to.equal("Player 2 paid you 5M (5M)");
+    expect(describeEntry(paid, 1, names)).to.equal("You paid Player 1 5M (5M)");
+    expect(describeEntry(cancelled, 0, names)).to.equal("Your Debt Collector was cancelled for Player 2");
+  });
+
+  it("uses the players' names", () => {
+    const names = ["Alex", "Sam"];
+    expect(describeEntry(paid, 0, names)).to.equal("Sam paid you 5M (5M)");
+    expect(describeEntry(cancelled, 1, names)).to.equal("Alex's Debt Collector was cancelled for you");
   });
 
   it("toasts the player something was done to, not the one who did it", () => {

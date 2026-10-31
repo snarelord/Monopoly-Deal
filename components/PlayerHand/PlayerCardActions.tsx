@@ -4,6 +4,7 @@ import { COLOUR_STYLES, colourName } from "@/components/colourStyles";
 
 interface PlayerCardActionsProps {
   actions: CardAction[];
+  names: string[];
   side: "left" | "right"; // which side of the card the menu opens on
   onActionClick: (action: CardAction, choice?: ActionChoice) => void;
   onClose: () => void;
@@ -29,7 +30,7 @@ const DOUBLE_LABELS = ["No", "Double", "Double twice"];
 
 const optionClass = "cursor-pointer rounded px-3 py-1 text-left hover:outline hover:outline-black";
 
-export default function PlayerCardActions({ actions, side, onActionClick, onClose }: PlayerCardActionsProps) {
+export default function PlayerCardActions({ actions, names, side, onActionClick, onClose }: PlayerCardActionsProps) {
   // the action being set up, and what's been picked for it so far
   const [active, setActive] = useState<CardAction | null>(null);
   const [choice, setChoice] = useState<ActionChoice>({});
@@ -121,9 +122,9 @@ export default function PlayerCardActions({ actions, side, onActionClick, onClos
               type="button"
               data-cy={`target-${targetId}`}
               onClick={() => pick({ targetId })}
-              className={optionClass}
+              className={`${optionClass} wrap-break-word`}
             >
-              Player {targetId + 1}
+              {names[targetId]}
             </button>
           ))}
         </>

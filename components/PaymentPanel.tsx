@@ -6,11 +6,11 @@ import Card from "@/components/Card";
 interface PaymentPanelProps {
   me: Player;
   amount: number;
-  toPlayerId: number;
+  toName: string;
   onMove: (move: Move) => void;
 }
 
-export default function PaymentPanel({ me, amount, toPlayerId, onMove }: PaymentPanelProps) {
+export default function PaymentPanel({ me, amount, toName, onMove }: PaymentPanelProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
   const payable = payableCards(me);
@@ -58,12 +58,12 @@ export default function PaymentPanel({ me, amount, toPlayerId, onMove }: Payment
       <div
         data-cy="payment-panel"
         role="dialog"
-        aria-label={`Pay Player ${toPlayerId + 1}`}
+        aria-label={`Pay ${toName}`}
         className="flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
       >
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="text-lg font-semibold">
-            Pay Player {toPlayerId + 1} {amount}M
+            Pay {toName} {amount}M
           </h2>
           <span data-cy="pay-total" data-total={total} className={total >= amount ? "text-green-700" : ""}>
             Selected: {total}M

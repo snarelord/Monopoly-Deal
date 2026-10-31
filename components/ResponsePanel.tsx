@@ -8,6 +8,7 @@ interface ResponsePanelProps {
   pendingCard: Card;
   effect: PendingEffect;
   debt: { playerId: number; amount: number; toPlayerId: number; status: string; sayNoCount: number };
+  names: string[];
   onMove: (move: Move) => void;
 }
 
@@ -27,16 +28,16 @@ function stakes(effect: PendingEffect, me: Player, amount: number): string {
   }
 }
 
-export default function ResponsePanel({ me, pendingCard, effect, debt, onMove }: ResponsePanelProps) {
+export default function ResponsePanel({ me, pendingCard, effect, debt, names, onMove }: ResponsePanelProps) {
   const sayNo = me.hand.find((c) => c.type === "action" && c.action === "just-say-no");
   const countering = debt.status === "countering";
   const debtorId = countering ? debt.playerId : undefined;
 
   const heading = countering
-    ? `Player ${debt.playerId + 1} said Just Say No to your ${pendingCard.name}`
+    ? `${names[debt.playerId]} said Just Say No to your ${pendingCard.name}`
     : debt.sayNoCount > 0
-      ? `Player ${debt.toPlayerId + 1} said no back! Again, ${stakes(effect, me, debt.amount)}`
-      : `Player ${debt.toPlayerId + 1} played ${pendingCard.name}: ${stakes(effect, me, debt.amount)}`;
+      ? `${names[debt.toPlayerId]} said no back! Again, ${stakes(effect, me, debt.amount)}`
+      : `${names[debt.toPlayerId]} played ${pendingCard.name}: ${stakes(effect, me, debt.amount)}`;
 
   return (
     <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4">

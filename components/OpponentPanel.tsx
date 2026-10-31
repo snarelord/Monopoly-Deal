@@ -20,9 +20,9 @@ export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: Opp
       }`}
     >
       <header className="flex items-center justify-between gap-3 border-b border-black/10 px-3 py-1.5 text-sm">
-        <span className="font-semibold">
-          Player {opponent.id + 1}
-          {isTheirTurn && <span className="ml-2 text-xs font-normal text-green-700">their turn</span>}
+        <span className="flex min-w-0 items-baseline font-semibold">
+          <span className="truncate">{opponent.name}</span>
+          {isTheirTurn && <span className="ml-2 shrink-0 text-xs font-normal text-green-700">their turn</span>}
         </span>
         <span className="flex shrink-0 gap-3 text-xs">
           <span title={`${opponent.bank.length} cards in the bank`}>

@@ -97,7 +97,7 @@ describe("Debt Collector", () => {
 });
 
 describe("Pay automatically", () => {
-  const player = (bank: Card[], properties: PropertySet[] = []) => ({ id: 1, hand: [], bank, properties });
+  const player = (bank: Card[], properties: PropertySet[] = []) => ({ id: 1, name: "Player 2", hand: [], bank, properties });
 
   it("pays the exact amount when it can", () => {
     expect(autoPay(player(money("money-3m-1", "money-1m-1", "money-2m-1")), 4).sort())

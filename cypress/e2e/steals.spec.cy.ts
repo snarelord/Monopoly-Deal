@@ -155,8 +155,8 @@ describe("Deal Breaker", () => {
 describe("Steal menu options", () => {
   // the menu for player 0 holding `steal`, with players 1 and 2 owning the given properties
   const options = (steal: Card, mine: PropertySet[], p1: PropertySet[], p2: PropertySet[]) => {
-    const me = { id: 0, hand: [steal], bank: [], properties: mine };
-    const opponents = [p1, p2].map((properties, i) => ({ id: i + 1, handCount: 0, bank: [], properties }));
+    const me = { id: 0, name: "Player 1", hand: [steal], bank: [], properties: mine };
+    const opponents = [p1, p2].map((properties, i) => ({ id: i + 1, name: `Player ${i + 2}`, handCount: 0, bank: [], properties }));
     const ctx = { playBlockedReason: null, canDiscard: false, opponents, me, playsLeft: PLAYS_PER_TURN };
     return getCardActions(steal, ctx).find((a) => a.id === "play-on-player")!;
   };

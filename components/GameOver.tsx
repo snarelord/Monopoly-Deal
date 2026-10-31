@@ -5,7 +5,7 @@ import CardPreview from "@/components/PlayerHand/CardPreview";
 import MiniSet from "@/components/MiniSet";
 
 interface GameOverProps {
-  players: { id: number; properties: PropertySet[]; bank: CardType[] }[];
+  players: { id: number; name: string; properties: PropertySet[]; bank: CardType[] }[];
   winnerId: number;
   onPlayAgain: () => void;
   onClose: () => void; // hide this to look at the final board
@@ -18,6 +18,7 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
   const standings = players
     .map((p) => ({
       id: p.id,
+      name: p.name,
       sets: new Set(p.properties.filter(isComplete).map((s) => s.colour)).size, // different colours, like the win
       properties: p.properties.reduce((n, s) => n + s.cards.length, 0),
       bank: p.bank.reduce((sum, c) => sum + c.value, 0),
@@ -30,10 +31,10 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
         data-cy="game-over"
         data-winner={winnerId}
         role="dialog"
-        aria-label={`Player ${winnerId + 1} wins`}
+        aria-label={`${winner.name} wins`}
         className="flex max-h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto rounded-lg bg-white p-5 text-black shadow-xl"
       >
-        <h2 className="text-2xl font-bold">Player {winnerId + 1} wins!</h2>
+        <h2 className="text-2xl font-bold wrap-break-word">{winner.name} wins!</h2>
 
         <section>
           <div className="mb-1 text-xs font-semibold">Winning sets</div>
@@ -60,7 +61,7 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
               {standings.map((s) => (
                 <tr key={s.id} data-cy="standing" data-player={s.id} className="border-t border-black/10">
                   <td className="py-1 font-semibold">
-                    Player {s.id + 1}
+                    {s.name}
                     {s.id === winnerId && " 🏆"}
                   </td>
                   <td className="py-1">{s.sets}</td>

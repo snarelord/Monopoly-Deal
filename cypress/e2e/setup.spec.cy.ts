@@ -51,6 +51,44 @@ describe("Choosing the number of players", () => {
     cy.get('[data-cy="pass-screens"]').should("not.be.checked");
   });
 
+  it("uses the names typed in, and the default for any left blank", () => {
+    cy.visit("/");
+    cy.get('[data-cy="players-3"]').click();
+    cy.get('[data-cy="name-0"]').type("Alex");
+    cy.get('[data-cy="name-1"]').type("  Sam  ");
+    cy.get('[data-cy="deal"]').click();
+
+    cy.get('[data-cy="turn-info"]').should("contain.text", "Alex's turn");
+    cy.get('[data-cy="opponent-1"]').should("contain.text", "Sam");
+    cy.get('[data-cy="opponent-2"]').should("contain.text", "Player 3");
+
+    cy.get('[data-cy="new-game"]').click();
+    cy.get('[data-cy="name-0"]').should("have.value", "Alex");
+    cy.get('[data-cy="name-1"]').should("have.value", "Sam");
+    cy.get('[data-cy="name-2"]').should("have.value", "");
+  });
+
+  it("keeps typed names when the player count changes", () => {
+    cy.visit("/");
+    cy.get('[data-cy="players-3"]').click();
+    cy.get('[data-cy="name-2"]').type("Jo");
+    cy.get('[data-cy="players-2"]').click();
+    cy.get('[data-cy="name-2"]').should("not.exist");
+    cy.get('[data-cy="players-3"]').click();
+    cy.get('[data-cy="name-2"]').should("have.value", "Jo");
+  });
+
+  it("won't deal when two players have the same name", () => {
+    cy.visit("/");
+    cy.get('[data-cy="name-0"]').type("Alex");
+    cy.get('[data-cy="name-1"]').type("alex");
+    cy.get('[data-cy="same-name"]').should("exist");
+    cy.get('[data-cy="deal"]').should("be.disabled");
+
+    cy.get('[data-cy="name-1"]').clear();
+    cy.get('[data-cy="deal"]').should("not.be.disabled");
+  });
+
   it("skips the pass screens with ?hotseat=open", () => {
     cy.visit("/?players=2&hotseat=open");
     drawCards();

@@ -15,6 +15,8 @@ export const SETS: Record<Colour, { size: number; rent: number[]; buildable: boo
   utility:   { size: 2, rent: [1, 2],       buildable: false },
 };
 
+export const COLOURS = Object.keys(SETS) as Colour[];
+
 export type ActionType =
   | "pass-go" | "debt-collector" | "birthday" | "deal-breaker" | "sly-deal"
   | "forced-deal" | "just-say-no" | "double-the-rent" | "house" | "hotel";
@@ -74,6 +76,8 @@ export interface GameState {
   actionCards: Card[];
   message?: string;
   discardPile: Card[],
+  turnNumber: number;
+  mustDiscard: boolean;
 }
 
 export interface OpponentView {

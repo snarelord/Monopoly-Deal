@@ -1,6 +1,9 @@
-import type { Card, GameState } from "../lib/types";
+import type { Card, GameState } from "./types";
 import { isComplete } from "./types";
-import { cardData } from "../lib/cardData";
+import { cardData } from "./cardData";
+
+export const PLAYS_PER_TURN = 3;
+export const HAND_LIMIT = 7;
 
 // Small deterministic random generator (mulberry32): same seed, same sequence
 function mulberry32(seed: number) {
@@ -43,14 +46,13 @@ export function beginGame(playerCount = 2, seed?: number): GameState {
     actionInProgress: null,
     hasDrawnCards: false,
     actionCards: [],
+    turnNumber: 1,
+    mustDiscard: false,
   };
 }
 
-export function endTurn() {
-  return console.log('Turn ended')
-}
-
 export function playToActionPile(game: GameState, playerId: number, cardId: string): GameState {
+  if (!canPlayCard(game, playerId)) return game;
   const player = game.players.find((p) => p.id === playerId);
   const card = player?.hand.find((c) => c.id === cardId);
   if (!player || !card) return game;
@@ -61,11 +63,12 @@ export function playToActionPile(game: GameState, playerId: number, cardId: stri
       p.id === playerId ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
     ),
     actionCards: [...game.actionCards, card],
-    cardsPlayed: game.cardsPlayed + 1, // the three plays limit isn't enforced yet
+    cardsPlayed: game.cardsPlayed + 1,
   };
 }
 
 export function playToBank(game: GameState, playerId: number, cardId: string): GameState {
+  if (!canPlayCard(game, playerId)) return game;
   const player = game.players.find((p) => p.id === playerId);
   const card = player?.hand.find((c) => c.id === cardId);
   if (!player || !card) return game;
@@ -85,6 +88,7 @@ export function playToBank(game: GameState, playerId: number, cardId: string): G
 }
 
 export function playToProperties(game: GameState, playerId: number, cardId: string): GameState {
+  if (!canPlayCard(game, playerId)) return game;
   const player = game.players.find((p) => p.id === playerId);
   const card = player?.hand.find((c) => c.id === cardId);
   if (!player || !card) return game;
@@ -110,4 +114,88 @@ export function playToProperties(game: GameState, playerId: number, cardId: stri
     ),
     cardsPlayed: game.cardsPlayed + 1,
   };
+}
+export function getTurnStatus(game: GameState) {
+  const player = game.players[game.currentPlayerIndex];
+  const playsLeft = Math.max(0, PLAYS_PER_TURN - game.cardsPlayed);
+
+  let playBlockedReason: string | null = null;
+  if (game.isGameOver) playBlockedReason = 'The game is over!';
+  else if (!game.hasDrawnCards) playBlockedReason = 'Draw your cards first';
+  else if (game.mustDiscard) playBlockedReason = 'Discard down to 7 cards first';
+  else if (playsLeft === 0) playBlockedReason = 'No plays left this turn';
+
+  return {
+    currentPlayerId: player.id,
+    turnNumber: game.turnNumber,
+    round: Math.floor((game.turnNumber -1) / game.players.length) + 1,
+    playsLeft,
+    canDraw: !game.hasDrawnCards && !game.isGameOver,
+    playBlockedReason, // null means a card can be played right now
+    canEndTurn: game.hasDrawnCards && !game.mustDiscard && !game.isGameOver,
+    mustDiscard: game.mustDiscard,
+    cardsToDiscard: Math.max(0, player.hand.length - HAND_LIMIT),
+
+  }
+}
+
+export type TurnStatus = ReturnType<typeof getTurnStatus>;
+
+function advanceTurn(game: GameState): GameState {
+  return {
+    ...game,
+    currentPlayerIndex: (game.currentPlayerIndex + 1 ) % game.players.length,
+    turnNumber: game.turnNumber + 1,
+    cardsPlayed: 0,
+    hasDrawnCards: false,
+    mustDiscard: false,
+  };
+}
+
+export function drawForTurn(game: GameState): GameState {
+  if (!getTurnStatus(game).canDraw) return game;
+
+  const player = game.players[game.currentPlayerIndex];
+  const drawn = game.deck.slice(0, player.hand.length === 0 ? 5 : 2);
+
+  return {
+    ...game,
+    players: game.players.map((p) =>
+      p.id === player.id ? { ...p, hand: [...p.hand, ...drawn] } : p
+    ),
+    deck: game.deck.slice(drawn.length),
+    hasDrawnCards: true, // set even if the deck ran dry, so the turn can still continue TODO: CHECK
+  };
+}
+
+export function endTurn(game: GameState): GameState {
+  if (!getTurnStatus(game).canEndTurn) return game;
+
+  const player = game.players[game.currentPlayerIndex];
+  if (player.hand.length > HAND_LIMIT) return { ...game, mustDiscard: true };
+  return advanceTurn(game);
+}
+
+export function discardCard(game: GameState, playerId: number, cardId: string): GameState {
+  const player = game.players[game.currentPlayerIndex];
+  if (!game.mustDiscard || player.id !== playerId) return game;
+
+  const card = player.hand.find((c) => c.id === cardId);
+  if (!card) return game;
+
+  const next: GameState = {
+    ...game,
+    players: game.players.map((p) =>
+      p.id === playerId ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
+    ),
+    discardPile: [...game.discardPile, card],
+  };
+
+  return player.hand.length - 1 <= HAND_LIMIT ? advanceTurn(next) : next;
+}
+
+// TODO: look at reinforcing this
+function canPlayCard(game: GameState, playerId: number) {
+  const status = getTurnStatus(game);
+  return status.playBlockedReason === null && status.currentPlayerId === playerId;
 }

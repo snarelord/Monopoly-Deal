@@ -13,11 +13,11 @@ const stackShadow = (layers: number) =>
 interface DrawPileProps {
   count: number;
   onDraw: () => void;
-  disabled: boolean;
+  canDraw: boolean;
 }
 
-export default function DrawPile({ count, onDraw, disabled }: DrawPileProps) {
-  const cannotDraw = disabled || count === 0;
+export default function DrawPile({ count, onDraw, canDraw }: DrawPileProps) {
+  const cannotDraw = !canDraw || count === 0;
 
   return (
     <button
@@ -26,7 +26,6 @@ export default function DrawPile({ count, onDraw, disabled }: DrawPileProps) {
       data-count={count}
       onClick={onDraw}
       disabled={cannotDraw}
-      aria-label={`Draw pile, ${count} cards remaining`}
       className="flex flex-col items-center gap-3 cursor-pointer"
     >
       <div className="w-24">

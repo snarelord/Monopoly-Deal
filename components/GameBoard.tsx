@@ -1,11 +1,13 @@
 "use client";
 
-import type { Card, Player, OpponentView, CardActionId } from "@/lib/types";
+import type { Card, Player, OpponentView, CardActionId, Colour } from "../lib/types";
+import { TurnStatus } from "../lib/gameHelpers";
 import PlayerHand from "./PlayerHand/PlayerHand";
 import DrawPile from "./DrawPile/DrawPile";
 import ActionPile from "./ActionPile/ActionPile";
 import PlayerBank from "./PlayerHand/PlayerBank";
 import PropertyPile from "./PropertyPile/PropertyPile";
+import TurnInfo from "./TurnInfo";
 
 export interface GameBoardProps {
   me: Player;
@@ -14,30 +16,33 @@ export interface GameBoardProps {
   discardPile: Card[];
   currentPlayerId: number;
   onDraw: () => void;
-  hasDrawnCards: boolean;
   actionPile: Card[];
-  onCardAction: (cardId: string, actionId: CardActionId) => void;
+  onCardAction: (cardId: string, actionId: CardActionId, colour?: Colour) => void;
+  turn: TurnStatus,
 }
 
 export default function GameBoard({
   me,
   drawPileCount,
   onDraw,
-  hasDrawnCards,
   actionPile,
   onCardAction,
+  turn,
 }: GameBoardProps) {
   return (
     <div
       data-cy="game-board"
       className="grid h-dvh grid-rows-[minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
     >
+      <div className="absolute right-4 top-4">
+        <TurnInfo turn={turn} />
+      </div>
       <div className="grid place-items-center">
         <div className="flex gap-[calc(var(--card-w)*0.4)]">
           <DrawPile
             count={drawPileCount}
+            canDraw={turn.canDraw}
             onDraw={onDraw}
-            disabled={hasDrawnCards}
           />
           <ActionPile cards={actionPile} />
         </div>
@@ -49,7 +54,7 @@ export default function GameBoard({
           <PlayerBank playerId={me.id} cards={me.bank} />
         </div>
 
-        <PlayerHand cards={me.hand} onCardAction={onCardAction} />
+        <PlayerHand cards={me.hand} turn={turn} onCardAction={onCardAction} />
 
         <div className="relative">
           <div className="absolute inset-0">

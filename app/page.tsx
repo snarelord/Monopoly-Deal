@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import {
   beginGame,
+  discardCard,
+  drawForTurn,
   endTurn,
+  getTurnStatus,
   playToActionPile,
   playToBank,
   playToProperties,
 } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
-import type { OpponentView, GameState, CardActionId } from "@/lib/types";
+import type { OpponentView, GameState, CardActionId, Colour } from "@/lib/types";
 
 export default function Home() {
   const [game, setGame] = useState<GameState | null>(null);
@@ -19,30 +22,29 @@ export default function Home() {
     setGame(beginGame(2, seed ? Number(seed) : undefined));
   }, []);
 
-  function handleCardAction(cardId: string, actionId: CardActionId) {
-    const moves: Partial<Record<CardActionId, typeof playToBank>> = {
+  if (!game) return null;
+
+  const turn = getTurnStatus(game);
+  const me = game.players[0];
+  const others = game.players.filter((player) => player.id !== me.id);
+
+  const update = (change: (g: GameState) => GameState) => setGame((g) => (g ? change(g) : g));
+  type Move = (game: GameState, playerId: number, cardId: string, colour?: Colour) => GameState;
+
+  function handleCardAction(cardId: string, actionId: CardActionId, colour?: Colour) {
+    const moves: Partial<Record<CardActionId, Move>> = {
       play: playToActionPile,
       bank: playToBank,
       "place-property": playToProperties,
+      discard: discardCard,
     };
-
     const move = moves[actionId];
     if (!move) {
       console.log(`${actionId}: ${cardId} (not built yet)`);
       return;
     }
-
-    setGame((current) => {
-      if (!current) return current;
-      const playerId = current.players[current.currentPlayerIndex].id;
-      return move(current, playerId, cardId);
-    });
+    update((g) => move(g, g.players[g.currentPlayerIndex].id, cardId, colour));
   }
-
-  if (!game) return null;
-
-  const me = game.players[0];
-  const others = game.players.filter((player) => player.id !== me.id);
 
   const opponents: OpponentView[] = others.map((p) => ({
     id: p.id,
@@ -50,31 +52,6 @@ export default function Home() {
     bank: p.bank,
     properties: p.properties,
   }));
-
-  function handleDraw() {
-    setGame((currentGame) => {
-      if (!currentGame) return currentGame;
-      if (currentGame.hasDrawnCards) return currentGame;
-      if (currentGame.deck.length === 0) return currentGame;
-
-      const cardsToDraw = currentGame.deck.slice(0, 2);
-      const remainingDeck = currentGame.deck.slice(2);
-      const currentPlayerId = currentGame.players[currentGame.currentPlayerIndex].id;
-
-      const players = currentGame.players.map((player) =>
-        player.id === currentPlayerId
-          ? { ...player, hand: [...player.hand, ...cardsToDraw] }
-          : player
-      );
-
-      return {
-        ...currentGame,
-        players,
-        deck: remainingDeck,
-        hasDrawnCards: true,
-      };
-    })
-  }
 
   return (
     <main className="relative">
@@ -84,8 +61,8 @@ export default function Home() {
         drawPileCount={game.deck.length}
         discardPile={game.discardPile}
         currentPlayerId={me.id}
-        onDraw={handleDraw}
-        hasDrawnCards={game.hasDrawnCards}
+        turn={turn}
+        onDraw={() => update(drawForTurn)}
         actionPile={game.actionCards}
         onCardAction={handleCardAction}
       />
@@ -97,8 +74,10 @@ export default function Home() {
           Deal again
         </button>
         <button
+          data-cy="end-turn"
           className="cursor-pointer border-2 text-black p-2"
-          onClick={() => endTurn()} // end turn does nothing currently
+          disabled={!turn.canEndTurn}
+          onClick={() => update(endTurn)}
         >
           End turn
         </button>

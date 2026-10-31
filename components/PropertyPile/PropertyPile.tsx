@@ -1,22 +1,9 @@
 import { useState } from "react";
 import type { Card as CardType, Colour, PropertySet } from "@/lib/types";
 import { SETS, isComplete } from "@/lib/types";
+import { COLOUR_STYLES } from "../colourStyles";
 import Card from "@/components/Card";
 import CardPreview from "../PlayerHand/CardPreview";
-
-// Full class names, so Tailwind can see them
-const COLOUR_STYLES: Record<Colour, string> = {
-  brown: "bg-amber-900 text-white",
-  lightBlue: "bg-sky-300",
-  pink: "bg-pink-400",
-  orange: "bg-orange-500",
-  red: "bg-red-600 text-white",
-  yellow: "bg-yellow-300",
-  green: "bg-green-600 text-white",
-  darkBlue: "bg-blue-800 text-white",
-  railroad: "bg-neutral-800 text-white",
-  utility: "bg-lime-200",
-};
 
 interface PropertyPileProps {
   playerId: number;
@@ -39,7 +26,7 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
           No properties yet
         </div>
       ) : (
-        <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(calc(var(--card-w)_+_0.5rem),1fr))] content-start gap-3 overflow-y-auto">
+        <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(calc(var(--card-w)+0.5rem),1fr))] content-start gap-3 overflow-y-auto">
           {sets.map((set) => (
             // how much of each card shows the last card in a set is always shown in full
             <section

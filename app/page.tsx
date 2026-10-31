@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { beginGame, endTurn, playToActionPile } from "@/lib/gameHelpers";
+import {
+  beginGame,
+  endTurn,
+  playToActionPile,
+  playToBank,
+  playToProperties,
+} from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
 import type { OpponentView, GameState, CardActionId } from "@/lib/types";
 
@@ -9,18 +15,27 @@ export default function Home() {
   const [game, setGame] = useState<GameState | null>(null);
 
   useEffect(() => {
-    setGame(beginGame(2));
+    const seed = new URLSearchParams(window.location.search).get("seed");
+    setGame(beginGame(2, seed ? Number(seed) : undefined));
   }, []);
 
   function handleCardAction(cardId: string, actionId: CardActionId) {
-    if (actionId !== "play") {
+    const moves: Partial<Record<CardActionId, typeof playToBank>> = {
+      play: playToActionPile,
+      bank: playToBank,
+      "place-property": playToProperties,
+    };
+
+    const move = moves[actionId];
+    if (!move) {
       console.log(`${actionId}: ${cardId} (not built yet)`);
       return;
     }
+
     setGame((current) => {
       if (!current) return current;
       const playerId = current.players[current.currentPlayerIndex].id;
-      return playToActionPile(current, playerId, cardId);
+      return move(current, playerId, cardId);
     });
   }
 

@@ -2,10 +2,11 @@
 import { useEffect, useState, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { Card as CardType } from "@/lib/types";
+import { getCardActions, type CardActionId } from "@/lib/cardActions";
 import Card from "@/components/Card";
 import FanControls from "./FanControls";
 import PlayerCardActions from "./PlayerCardActions"
-import { getCardActions, type CardActionId } from "@/lib/cardActions";
+import CardPreview from "./CardPreview";
 
 const DEFAULT_DEGREES = 10;
 const MIN_DEGREES = 3;
@@ -25,20 +26,6 @@ export default function PlayerHand({
     useState(DEFAULT_DEGREES);
   const handRef = useRef<HTMLUListElement>(null);
   const middle = (cards.length - 1) / 2;
-
-  useEffect(() => {
-    if (!previewCard) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setPreviewCard(null);
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [previewCard]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -68,7 +55,7 @@ export default function PlayerHand({
       <ul
         ref={handRef}
         data-cy="my-hand"
-        className="relative mx-auto h-64 w-full max-w-3xl"
+        className="relative mx-auto h-[calc(var(--card-w)*2.7)] w-full max-w-3xl"
       >
         {cards.map((card, i) => {
           const isSelected = card.id === selectedId;
@@ -115,24 +102,7 @@ export default function PlayerHand({
         setDegreesBetweenCards={setDegreesBetweenCards}
       />
 
-      {previewCard && (
-        <div className="card-preview">
-          <button
-            className="card-preview-backdrop"
-            onClick={() => setPreviewCard(null)}
-            aria-label="Close card preview"
-          />
-
-          <div
-            className="card-preview-content"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`Card preview: ${previewCard.name}`}
-          >
-            <Card card={previewCard} className="w-80" />
-          </div>
-        </div>
-      )}
+      <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />
     </div>
   );
 }

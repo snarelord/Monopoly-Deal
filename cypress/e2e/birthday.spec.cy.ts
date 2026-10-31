@@ -13,7 +13,7 @@ const setup = (banks: Record<number, Card[]>): GameState => {
     ...game,
     hasDrawnCards: true,
     players: game.players.map((p) =>
-      p.id === 0 ? { ...p, hand: [birthday] } : { ...p, bank: banks[p.id] ?? [] },
+      p.id === 0 ? { ...p, hand: [birthday] } : { ...p, hand: [], bank: banks[p.id] ?? [] },
     ),
   };
 };
@@ -30,8 +30,8 @@ describe("Birthday", () => {
     const after = celebrate(setup({ 1: [card("money-2m-1")], 2: [card("money-2m-2")] }));
 
     expect(after.pending?.debts).to.deep.equal([
-      { playerId: 1, amount: 2, status: "paying" },
-      { playerId: 2, amount: 2, status: "paying" },
+      { playerId: 1, amount: 2, status: "paying", sayNoCount: 0 },
+      { playerId: 2, amount: 2, status: "paying", sayNoCount: 0 },
     ]);
     expect(waitingOn(after)).to.deep.equal([1, 2]);
     expect(after.cardsPlayed).to.equal(1);
@@ -62,13 +62,16 @@ describe("Birthday", () => {
   });
 });
 
+const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
+
 describe("Birthday in the game", () => {
   // player 1 opens with a birthday card, and player 2 gets a money card by their first draw
   const seed = Array.from({ length: 5000 }, (_, i) => i + 1).find((s) => {
     const game = beginGame(2, s);
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     return game.players[0].hand.some((c) => c.id.startsWith("action-birthday"))
-      && p2Cards.some((c) => c.type === "money");
+      && p2Cards.some((c) => c.type === "money")
+      && !p2Cards.some(isSayNo); // otherwise player 2 gets asked about just say no first
   });
 
   it("collects 2M from the other player", () => {

@@ -1,4 +1,4 @@
-import type { Card, Colour, Debt, GameState, Move, MoveResult, Player, PropertySet } from "./types";
+import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, Player, PropertySet } from "./types";
 import { COLOURS, isComplete, openSetColours } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
@@ -57,16 +57,22 @@ export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 *
 const ok = (game: GameState): MoveResult => ({ ok: true, game });
 const fail = (error: string): MoveResult => ({ ok: false, error });
 
-// who the game needs to hear from next: normally whoever's turn it is,
-// but while an action is pending it's the players who still owe
+// who the game needs to hear from next: normally whoever's turn it is, but while an action is pending
+// it's whoever has a move on each debt: the debtor, or the player who played it when they can counter a just say no
 export function waitingOn(game: GameState): number[] {
   if (game.pending) {
-    return game.pending.debts.filter((d) => d.status !== "done").map((d) => d.playerId);
+    const { debts, fromPlayerId } = game.pending;
+    const ids = debts.flatMap((d) =>
+      d.status === "done" ? [] : d.status === "countering" ? [fromPlayerId] : [d.playerId],
+    );
+    return [...new Set(ids)];
   }
   return [game.players[game.currentPlayerIndex].id];
 }
 
-// the single way into the game logic: who is acting, and what they want to do
+// the single way into the game logic: who is acting, and what they want to do.
+// PLANNED: once a move succeeds, append its entry to GameState.log here (see types.ts), in this one place
+// rather than in each move function
 export function applyMove(game: GameState, actorId: number, move: Move): MoveResult {
   if (!waitingOn(game).includes(actorId)) {
     return fail(game.pending ? "Waiting for other players to pay" : "It's not your turn");
@@ -75,7 +81,8 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
   // while something is pending, the only thing to do is respond to it
   if (game.pending) {
     if (move.type === "pay") return payDebt(game, actorId, move.cardIds);
-    return fail("You need to pay first");
+    if (move.type === "just-say-no" || move.type === "accept") return respond(game, actorId, move);
+    return fail("Deal with the action in front of you first");
   }
 
   switch (move.type) {
@@ -95,6 +102,9 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
       return chargeRent(game, actorId, move.cardId, move.colour, move.targetId, move.doubleRentIds ?? []);
     case "pay":
       return fail("There's nothing to pay");
+    case "just-say-no":
+    case "accept":
+      return fail("There's nothing to respond to");
   }
 }
 
@@ -139,13 +149,13 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
   // what the card does once it's played, the rest of the actions slot in here as they're built
   if (card.type === "action" && card.action === "pass-go") return ok(drawCards(played, playerId, 2));
   if (isDebtCollector) {
-    return ok(startPayment(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT, status: "paying" }]));
+    return ok(startPayment(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT }]));
   }
   if (card.type === "action" && card.action === "birthday") {
-    const debts = game.players
+    const owed = game.players
       .filter((p) => p.id !== playerId)
-      .map((p): Debt => ({ playerId: p.id, amount: BIRTHDAY_AMOUNT, status: "paying" }));
-    return ok(startPayment(played, card, playerId, debts));
+      .map((p) => ({ playerId: p.id, amount: BIRTHDAY_AMOUNT }));
+    return ok(startPayment(played, card, playerId, owed));
   }
   return ok(played);
 }
@@ -206,18 +216,98 @@ function chargeRent(
     discardPile: [...game.discardPile, card, ...(doubles as Card[])],
     cardsPlayed: game.cardsPlayed + used.length,
   };
-  return ok(startPayment(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount, status: "paying" }))));
+  return ok(startPayment(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount }))));
 }
 
-// sets up an action that other players have to pay for. anyone with nothing to pay with
-// is let off straight away (the rules forgive what you can't cover), so nobody gets stuck
-function startPayment(game: GameState, card: Card, fromPlayerId: number, debts: Debt[]): GameState {
-  const settled = debts.map((debt) => {
-    const debtor = game.players.find((p) => p.id === debt.playerId)!;
-    return payableCards(debtor).length === 0 ? { ...debt, status: "done" as const } : debt;
+/*
+  sets up an action that other players have to pay for. each debt starts as:
+  - done, if the debtor has nothing to pay with (the rules forgive what you can't cover, and nobody gets stuck)
+  - responding, if they're holding a just say no, so they get the chance to play it
+  - paying, otherwise (no point asking someone who can't say no)
+*/
+function startPayment(
+  game: GameState,
+  card: Card,
+  fromPlayerId: number,
+  owed: { playerId: number; amount: number }[],
+): GameState {
+  const debts = owed.map(({ playerId, amount }): Debt => {
+    const debtor = game.players.find((p) => p.id === playerId)!;
+    const status = payableCards(debtor).length === 0 ? "done" : holdsSayNo(debtor) ? "responding" : "paying";
+    return { playerId, amount, status, sayNoCount: 0 };
   });
-  const pending = settled.every((d) => d.status === "done") ? null : { card, fromPlayerId, debts: settled };
-  return { ...game, pending };
+  return withDebts(game, { card, fromPlayerId, debts });
+}
+
+// stores the pending action's debts, and clears it once every one is done so the turn carries on
+function withDebts(game: GameState, pending: PendingAction): GameState {
+  return { ...game, pending: pending.debts.every((d) => d.status === "done") ? null : pending };
+}
+
+const isSayNo = (card: Card) => card.type === "action" && card.action === "just-say-no";
+const holdsSayNo = (player: Player) => player.hand.some(isSayNo);
+
+/*
+  answering a pending action, back and forth on one debt:
+  the debtor plays just say no (or accepts and pays), then the player who played the action can say no
+  back (or let it go), then the debtor again... each side only gets asked if they're holding a just say no.
+  an odd number of just say nos cancels the debt, an even number means it's paid after all.
+  each debt is separate, so on a birthday one player saying no doesn't let anyone else off
+*/
+function respond(
+  game: GameState,
+  actorId: number,
+  move: Extract<Move, { type: "just-say-no" | "accept" }>,
+): MoveResult {
+  const pending = game.pending!;
+  const isAttacker = actorId === pending.fromPlayerId;
+  const debt = isAttacker
+    ? pending.debts.find((d) => d.status === "countering" && (move.debtorId === undefined || d.playerId === move.debtorId))
+    : pending.debts.find((d) => d.playerId === actorId && d.status === "responding");
+  if (!debt) return fail("There's nothing for you to respond to");
+
+  const update = (next: GameState, status: Debt["status"], sayNoCount = debt.sayNoCount) =>
+    ok(withDebts(next, {
+      ...pending,
+      debts: pending.debts.map((d) => (d === debt ? { ...d, status, sayNoCount } : d)),
+    }));
+
+  // the debtor accepts and pays, or the player who played the action lets the just say no stand
+  if (move.type === "accept") return isAttacker ? update(game, "done") : update(game, payingOrLetOff(game, debt));
+
+  const actor = game.players.find((p) => p.id === actorId)!;
+  const card = actor.hand.find((c) => c.id === move.cardId);
+  if (!card || !isSayNo(card)) return fail("That isn't a Just Say No in your hand");
+
+  // played on your own turn it counts as one of your plays (the official rule), so you need one left
+  const isOwnTurn = actorId === game.players[game.currentPlayerIndex].id;
+  if (isOwnTurn && game.cardsPlayed >= PLAYS_PER_TURN) return fail("No plays left to play Just Say No");
+
+  const next: GameState = {
+    ...game,
+    players: updatePlayer(game, actorId, (p) => ({ ...p, hand: withoutCard(p.hand, card.id) })),
+    discardPile: [...game.discardPile, card],
+    cardsPlayed: game.cardsPlayed + (isOwnTurn ? 1 : 0),
+  };
+  const sayNoCount = debt.sayNoCount + 1;
+
+  if (isAttacker) {
+    // said no back: the debtor owes again, unless they have another just say no to answer with
+    const debtor = next.players.find((p) => p.id === debt.playerId)!;
+    return update(next, holdsSayNo(debtor) ? "responding" : payingOrLetOff(next, debt), sayNoCount);
+  }
+
+  // the debtor said no: the player who played the action can say no back if they hold one and have a play left,
+  // otherwise it's cancelled for this debtor
+  const attacker = next.players.find((p) => p.id === pending.fromPlayerId)!;
+  const canCounter = holdsSayNo(attacker) && next.cardsPlayed < PLAYS_PER_TURN;
+  return update(next, canCounter ? "countering" : "done", sayNoCount);
+}
+
+// going ahead with a debt: pay it, or let them off if there's nothing left to pay with
+function payingOrLetOff(game: GameState, debt: Debt): Debt["status"] {
+  const debtor = game.players.find((p) => p.id === debt.playerId)!;
+  return payableCards(debtor).length === 0 ? "done" : "paying";
 }
 
 function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResult {
@@ -267,11 +357,7 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
 
   const debts = pending.debts.map((d) => (d === debt ? { ...d, status: "done" as const } : d));
   // TODO: check for a winner here too, being paid in properties can complete a third set
-  return ok({
-    ...game,
-    players,
-    pending: debts.every((d) => d.status === "done") ? null : { ...pending, debts },
-  });
+  return ok(withDebts({ ...game, players }, { ...pending, debts }));
 }
 
 // puts a property into the first unfinished set of that colour, or starts a new set
@@ -340,7 +426,7 @@ export function getTurnStatus(game: GameState) {
 
   let playBlockedReason: string | null = null;
   if (game.isGameOver) playBlockedReason = 'The game is over!';
-  else if (game.pending) playBlockedReason = 'Waiting for a payment';
+  else if (game.pending) playBlockedReason = 'Waiting on other players';
   else if (!game.hasDrawnCards) playBlockedReason = 'Draw your cards first';
   else if (game.mustDiscard) playBlockedReason = 'Discard down to 7 cards first';
   else if (playsLeft === 0) playBlockedReason = 'No plays left this turn';
@@ -355,10 +441,17 @@ export function getTurnStatus(game: GameState) {
     canEndTurn: game.hasDrawnCards && !game.mustDiscard && !game.isGameOver && !game.pending,
     mustDiscard: game.mustDiscard,
     cardsToDiscard: Math.max(0, player.hand.length - HAND_LIMIT),
-    // who still owes what on the pending action, empty when nothing is pending
+    // the card behind the pending action, and each debt still being dealt with (empty when nothing is pending)
+    pendingCard: game.pending?.card ?? null,
     owing: (game.pending?.debts ?? [])
       .filter((d) => d.status !== "done")
-      .map((d) => ({ playerId: d.playerId, amount: d.amount, toPlayerId: game.pending!.fromPlayerId })),
+      .map((d) => ({
+        playerId: d.playerId,
+        amount: d.amount,
+        toPlayerId: game.pending!.fromPlayerId,
+        status: d.status,
+        sayNoCount: d.sayNoCount,
+      })),
   }
 }
 

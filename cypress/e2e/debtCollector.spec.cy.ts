@@ -17,7 +17,7 @@ const setup = (bank: Card[] = [], properties: PropertySet[] = []): GameState => 
     ...game,
     hasDrawnCards: true,
     players: game.players.map((p) =>
-      p.id === 0 ? { ...p, hand: [debtCollector] } : { ...p, bank, properties },
+      p.id === 0 ? { ...p, hand: [debtCollector] } : { ...p, hand: [], bank, properties },
     ),
   };
 };
@@ -34,7 +34,7 @@ describe("Debt Collector", () => {
   it("makes the chosen player owe 5M", () => {
     const after = collect(setup(money("money-5m-1")));
 
-    expect(after.pending?.debts).to.deep.equal([{ playerId: 1, amount: 5, status: "paying" }]);
+    expect(after.pending?.debts).to.deep.equal([{ playerId: 1, amount: 5, status: "paying", sayNoCount: 0 }]);
     expect(waitingOn(after)).to.deep.equal([1]);
     expect(after.cardsPlayed).to.equal(1);
     expect(after.discardPile.map((c) => c.id)).to.deep.equal([debtCollector.id]);
@@ -139,13 +139,16 @@ describe("Pay automatically", () => {
   });
 });
 
+const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
+
 describe("Debt Collector in the game", () => {
   // player 1 opens with a debt collector, and player 2 gets a money card by their first draw
   const seed = Array.from({ length: 5000 }, (_, i) => i + 1).find((s) => {
     const game = beginGame(2, s);
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     return game.players[0].hand.some((c) => c.id.startsWith("action-debt-collector"))
-      && p2Cards.some((c) => c.type === "money");
+      && p2Cards.some((c) => c.type === "money")
+      && !p2Cards.some(isSayNo); // otherwise player 2 gets asked about just say no first
   });
 
   it("hands over to the player who owes, then back once they've paid", () => {

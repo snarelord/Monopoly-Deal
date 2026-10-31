@@ -19,8 +19,12 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
         </div>
       )}
       {turn.owing.map((debt) => (
-        <div key={debt.playerId} data-cy="owing" className="mt-1 font-semibold text-amber-700">
-          Player {debt.playerId + 1} owes Player {debt.toPlayerId + 1} {debt.amount}M
+        <div key={debt.playerId} data-cy="owing" data-status={debt.status} className="mt-1 font-semibold text-amber-700">
+          {debt.status === "countering"
+            ? `Player ${debt.playerId + 1} said no, Player ${debt.toPlayerId + 1} can say no back`
+            : debt.status === "responding"
+              ? `Player ${debt.playerId + 1} can Just Say No to ${debt.amount}M`
+              : `Player ${debt.playerId + 1} owes Player ${debt.toPlayerId + 1} ${debt.amount}M`}
         </div>
       ))}
       {moveError && (

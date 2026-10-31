@@ -9,7 +9,19 @@ import PlayerBank from "./PlayerHand/PlayerBank";
 import PropertyPile from "./PropertyPile/PropertyPile";
 import TurnInfo from "./TurnInfo";
 import PaymentPanel from "./PaymentPanel";
+import ResponsePanel from "./ResponsePanel";
 
+/*
+  PLANNED: seeing what everyone else is doing (banks and property piles are face up in the real game)
+  - opponent panels in a strip across the top, one per opponent, built from the `opponents` prop
+    (already passed in, not drawn yet): hand size as a count, bank total, each property set as a small
+    colour chip with progress ("green 2/3", ✓ when complete)
+  - clicking an opponent's bank or properties opens the full view (see the PLANNED notes in PlayerBank and PropertyPile)
+  - a game log feed in the empty space left of the draw/discard piles, reading GameState.log (see types.ts),
+    collapsing to just the latest entry on mobile
+  - toasts only for things aimed at you, e.g. "Player 2 said Just Say No to your Debt Collector"
+    (right now when an action is cancelled the game just carries on and nobody is told)
+*/
 export interface GameBoardProps {
   me: Player;
   opponents: OpponentView[];
@@ -30,7 +42,13 @@ export default function GameBoard({
   turn,
   moveError,
 }: GameBoardProps) {
-  const myDebt = turn.owing.find((debt) => debt.playerId === me.id);
+  // a debt I'm paying, or one where it's my move to just say no (as the debtor) or say no back (as the one owed)
+  const myDebt = turn.owing.find((debt) => debt.playerId === me.id && debt.status === "paying");
+  const myResponse = turn.owing.find(
+    (debt) =>
+      (debt.playerId === me.id && debt.status === "responding") ||
+      (debt.toPlayerId === me.id && debt.status === "countering"),
+  );
 
   return (
     <div
@@ -78,6 +96,9 @@ export default function GameBoard({
       {myDebt && (
         // keyed by player so each payer starts with a fresh selection (several players can owe in turn)
         <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />
+      )}
+      {!myDebt && myResponse && turn.pendingCard && (
+        <ResponsePanel me={me} pendingCard={turn.pendingCard} debt={myResponse} onMove={onMove} />
       )}
     </div>
   );

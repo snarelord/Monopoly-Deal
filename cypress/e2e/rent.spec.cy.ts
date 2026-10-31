@@ -51,7 +51,7 @@ const setup = (...hand: Card[]): GameState => {
     players: game.players.map((p) =>
       p.id === 0
         ? { ...p, hand, properties: [browns] }
-        : { ...p, bank: [card(`money-5m-${p.id}`)] },
+        : { ...p, hand: [], bank: [card(`money-5m-${p.id}`)] },
     ),
   };
 };
@@ -68,8 +68,8 @@ describe("Rent cards", () => {
     const after = act(setup(brownRent), { type: "rent", cardId: brownRent.id, colour: "brown" });
 
     expect(after.pending?.debts).to.deep.equal([
-      { playerId: 1, amount: 2, status: "paying" },
-      { playerId: 2, amount: 2, status: "paying" },
+      { playerId: 1, amount: 2, status: "paying", sayNoCount: 0 },
+      { playerId: 2, amount: 2, status: "paying", sayNoCount: 0 },
     ]);
     expect(after.cardsPlayed).to.equal(1);
     expect(after.discardPile.map((c) => c.id)).to.deep.equal([brownRent.id]);
@@ -77,7 +77,7 @@ describe("Rent cards", () => {
 
   it("charges only the chosen player with the any colour rent card", () => {
     const after = act(setup(anyRent), { type: "rent", cardId: anyRent.id, colour: "brown", targetId: 2 });
-    expect(after.pending?.debts).to.deep.equal([{ playerId: 2, amount: 2, status: "paying" }]);
+    expect(after.pending?.debts).to.deep.equal([{ playerId: 2, amount: 2, status: "paying", sayNoCount: 0 }]);
   });
 
   it("needs a player for the any colour rent card", () => {
@@ -145,7 +145,9 @@ describe("Rent in the game", () => {
     const property = p1.find((c) => c.type === "property" && rentCard?.colours.includes(c.colour));
     const p1Draws = [...game.deck.slice(0, 2), ...game.deck.slice(4, 6)];
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
-    const fits = rentCard && property && ![...p1, ...p1Draws].some(isDouble) && p2Cards.some((c) => c.type === "money");
+    const fits = rentCard && property && ![...p1, ...p1Draws].some(isDouble)
+      && p2Cards.some((c) => c.type === "money")
+      && !p2Cards.some((c) => c.type === "action" && c.action === "just-say-no"); // otherwise player 2 gets asked first
     return fits ? { seed, rentCard, property: property as Extract<Card, { type: "property" }> } : null;
   }).find(Boolean)!;
 

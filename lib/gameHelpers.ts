@@ -95,12 +95,16 @@ function playToActionPile(game: GameState, playerId: number, cardId: string): Mo
   if (typeof found === "string") return fail(found);
   const { card } = found;
 
-  return ok({
+  const played: GameState = {
     ...game,
     players: updatePlayer(game, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, cardId) })),
     discardPile: [...game.discardPile, card],
     cardsPlayed: game.cardsPlayed + 1,
-  });
+  };
+
+  // what the card does once it's played, the rest of the actions slot in here as they're built
+  if (card.type === "action" && card.action === "pass-go") return ok(drawCards(played, playerId, 2));
+  return ok(played);
 }
 
 function playToBank(game: GameState, playerId: number, cardId: string): MoveResult {
@@ -204,7 +208,15 @@ function drawForTurn(game: GameState): MoveResult {
   const player = game.players[game.currentPlayerIndex];
   const count = player.hand.length === 0 ? 5 : 2;
 
-  // not enough to draw: shuffle the discard pile in underneath what's left
+  return ok({
+    ...drawCards(game, player.id, count),
+    hasDrawnCards: true, // set even if both piles are empty, so the turn can still continue
+  });
+}
+
+// moves cards from the top of the deck into a player's hand (start of turn, pass go...)
+function drawCards(game: GameState, playerId: number, count: number): GameState {
+  // not enough to draw, shuffle the discard pile in underneath what's left
   let { deck, discardPile } = game;
   if (deck.length < count && discardPile.length > 0) {
     // seed + turn number so each reshuffle is different but still replays the same
@@ -213,13 +225,12 @@ function drawForTurn(game: GameState): MoveResult {
   }
   const drawn = deck.slice(0, count);
 
-  return ok({
+  return {
     ...game,
-    players: updatePlayer(game, player.id, (p) => ({ ...p, hand: [...p.hand, ...drawn] })),
+    players: updatePlayer(game, playerId, (p) => ({ ...p, hand: [...p.hand, ...drawn] })),
     deck: deck.slice(drawn.length),
     discardPile,
-    hasDrawnCards: true, // set even if both piles are empty, so the turn can still continue
-  });
+  };
 }
 
 function endTurn(game: GameState): MoveResult {

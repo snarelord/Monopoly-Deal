@@ -89,9 +89,24 @@ export interface Debt {
 }
 
 // an action that's waiting on other players before the turn can carry on
+/*
+  what happens to each target if the action goes ahead:
+  - pay: they pay their debt's amount
+  - sly-deal: takeId moves from the target to the player who played it
+  - forced-deal: takeId and giveId swap between them
+  - deal-breaker: the target's complete set with takeId in it moves over, buildings and all
+  the steals happen straight away when they go ahead, the debt's amount is 0 for them
+*/
+export type PendingEffect =
+  | { kind: "pay" }
+  | { kind: "sly-deal"; takeId: string }
+  | { kind: "forced-deal"; takeId: string; giveId: string }
+  | { kind: "deal-breaker"; takeId: string };
+
 export interface PendingAction {
   card: Card;
-  fromPlayerId: number; // who gets paid
+  fromPlayerId: number; // who gets paid, or who's doing the taking
+  effect: PendingEffect;
   debts: Debt[];
 }
 
@@ -132,7 +147,9 @@ export type Move =
   | { type: "draw" }
   | { type: "end-turn" }
   | { type: "bank"; cardId: string }
-  | { type: "play"; cardId: string; targetId?: number } // targetId for cards aimed at one player
+  // targetId for cards aimed at one player. takeId is the card to take (for deal breaker, any card in the set),
+  // giveId is your card to swap for it (forced deal)
+  | { type: "play"; cardId: string; targetId?: number; takeId?: string; giveId?: string }
   | { type: "place-property"; cardId: string; colour?: Colour }
   | { type: "discard"; cardId: string }
   | { type: "pay"; cardIds: string[] } // bank and property cards chosen to pay a debt

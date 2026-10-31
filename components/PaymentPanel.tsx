@@ -10,7 +10,6 @@ interface PaymentPanelProps {
   onMove: (move: Move) => void;
 }
 
-// shown to a player who owes money: pick cards from your bank and properties, or let it pick for you
 export default function PaymentPanel({ me, amount, toPlayerId, onMove }: PaymentPanelProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -18,7 +17,7 @@ export default function PaymentPanel({ me, amount, toPlayerId, onMove }: Payment
   const bank = payable.filter((c) => me.bank.includes(c));
   const onTable = payable.filter((c) => !me.bank.includes(c));
   const properties = onTable.filter((c) => c.type === "property" || c.type === "wildcard");
-  const buildings = onTable.filter((c) => c.type === "action"); // houses and hotels
+  const buildings = onTable.filter((c) => c.type === "action");
   const total = cardsTotal(payable.filter((c) => selected.includes(c.id)));
   // no change given, so it has to cover the amount, unless it's everything you've got
   const canPay = total >= amount || (selected.length > 0 && selected.length === payable.length);
@@ -72,7 +71,7 @@ export default function PaymentPanel({ me, amount, toPlayerId, onMove }: Payment
         </div>
         <p className="text-xs text-black/60">No change is given. Click cards to choose what to pay with.</p>
 
-        <div className="flex flex-col gap-3 overflow-y-auto">
+        <div className="flex flex-col gap-3 overflow-y-auto p-2">
           {cardGroup("Bank", bank)}
           {cardGroup("Properties", properties)}
           {cardGroup("Buildings", buildings)}

@@ -1,9 +1,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { Card as CardType, Colour, Move } from "../../lib/types";
+import type { Card as CardType, Move } from "../../lib/types";
 import type { TurnStatus } from "../../lib/gameHelpers";
-import { getCardActions, toMove, type CardAction } from "@/lib/cardActions";
+import { getCardActions, toMove, type ActionChoice, type CardAction } from "@/lib/cardActions";
 import Card from "@/components/Card";
 import FanControls from "./FanControls";
 import PlayerCardActions from "./PlayerCardActions"
@@ -18,10 +18,12 @@ const SPACING_STEP = 15;
 export default function PlayerHand({
   cards,
   turn,
+  opponentIds,
   onMove,
 }: {
   cards: CardType[];
   turn: TurnStatus;
+  opponentIds: number[];
   onMove: (move: Move) => void;
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
@@ -48,8 +50,8 @@ export default function PlayerHand({
     };
   }, [selectedId]);
 
-  function handleAction(card: CardType, action: CardAction, colour?: Colour) {
-    const move = toMove(card.id, action.id, colour);
+  function handleAction(card: CardType, action: CardAction, choice?: ActionChoice) {
+    const move = toMove(card, action.id, choice);
     if (move) onMove(move);
     else console.log(`${action.id}: ${card.id} (not built yet)`);
     setSelectedId(null);
@@ -87,10 +89,11 @@ export default function PlayerHand({
                     actions={getCardActions(card, {
                       playBlockedReason: turn.playBlockedReason,
                       canDiscard: turn.mustDiscard,
+                      opponentIds,
                     })}
                     // open towards the middle of the screen so it never runs off the edge
                     side={i > middle ? "left" : "right"}
-                    onActionClick={(action, colour) => handleAction(card, action, colour)}
+                    onActionClick={(action, choice) => handleAction(card, action, choice)}
                     onClose={() => setSelectedId(null)}
                   />
                 )}

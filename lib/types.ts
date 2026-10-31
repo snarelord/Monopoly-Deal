@@ -57,11 +57,18 @@ export interface Player {
   properties: PropertySet[];
 }
 
-export interface ActionInProgress {
-  type: string;
-  sourcePlayer: number;
-  targetPlayer?: number;
+// one player's share of a pending action, e.g. 5M owed from a debt collector
+export interface Debt {
+  playerId: number;
+  amount: number;
+  status: "paying" | "done"; // TODO: a "responding" step comes first once just say no exists
+}
+
+// an action that's waiting on other players before the turn can carry on
+export interface PendingAction {
   card: Card;
+  fromPlayerId: number; // who gets paid
+  debts: Debt[];
 }
 
 export interface GameState {
@@ -71,7 +78,7 @@ export interface GameState {
   cardsPlayed: number;
   isGameOver: boolean;
   winner: Player | null;
-  actionInProgress: ActionInProgress | null;
+  pending: PendingAction | null; // while set, the game waits on the players who still owe
   hasDrawnCards: boolean;
   message?: string;
   discardPile: Card[], // played actions and discards, reshuffled into the deck when it runs out
@@ -85,9 +92,10 @@ export type Move =
   | { type: "draw" }
   | { type: "end-turn" }
   | { type: "bank"; cardId: string }
-  | { type: "play"; cardId: string }
+  | { type: "play"; cardId: string; targetId?: number } // targetId for cards aimed at one player
   | { type: "place-property"; cardId: string; colour?: Colour }
-  | { type: "discard"; cardId: string };
+  | { type: "discard"; cardId: string }
+  | { type: "pay"; cardIds: string[] }; // bank and property cards chosen to pay a debt
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 

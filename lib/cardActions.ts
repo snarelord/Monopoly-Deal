@@ -6,19 +6,27 @@ export interface CardAction {
   label: string;
   disabled?: boolean;
   reason?: string; // shown as a tooltip when disabled
-  colours?: Colour[];
+  colours?: Colour[]; // pick a colour before it happens (wildcards)
+  targets?: number[]; // pick a player before it happens (debt collector...)
+}
+
+// what the player picked in the menu on top of the action itself
+export interface ActionChoice {
+  colour?: Colour;
+  targetId?: number;
 }
 
 // later this grows, whose turn, phase, plays left...
 export interface ActionContext {
   playBlockedReason: string | null;
   canDiscard: boolean;
+  opponentIds: number[];
 }
 
 const TARGETED: ActionType[] = ["debt-collector", "sly-deal", "forced-deal", "deal-breaker"];
 
-function playOption(action: ActionType): CardAction | null {
-  if (TARGETED.includes(action)) return { id: "play-on-player", label: "Play against a player" };
+function playOption(action: ActionType, opponentIds: number[]): CardAction | null {
+  if (TARGETED.includes(action)) return { id: "play-on-player", label: "Play against a player", targets: opponentIds };
   if (action === "pass-go") return { id: "play", label: "Play (draw 2)" };
   if (action === "house" || action === "hotel") return { id: "add-to-set", label: "Add to a set" };
   if (action === "just-say-no") return null; // only played in response, so bank or discard
@@ -57,27 +65,36 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
     case "rent":
       return [
         bank,
-        card.colours === "any"
-          ? { id: "play-on-player", label: "Charge a player" }
-          : { id: "play", label: "Charge rent" },
+        play(
+          card.colours === "any"
+            ? { id: "play-on-player", label: "Charge a player" }
+            : { id: "play", label: "Charge rent" },
+        ),
         discard,
       ];
     case "action": {
-      const option = playOption(card.action);
-      return [bank, ...(option ? [option] : []), discard];
+      const option = playOption(card.action, ctx.opponentIds);
+      return [bank, ...(option ? [play(option)] : []), discard];
     }
   }
 }
 
 // turns a menu choice into a move, null means that action isn't built yet
-export function toMove(cardId: string, actionId: CardActionId, colour?: Colour): Move | null {
+export function toMove(card: Card, actionId: CardActionId, choice: ActionChoice = {}): Move | null {
+  const cardId = card.id;
   switch (actionId) {
     case "bank":
     case "play":
     case "discard":
       return { type: actionId, cardId };
     case "place-property":
-      return { type: "place-property", cardId, colour };
+      return { type: "place-property", cardId, colour: choice.colour };
+    case "play-on-player":
+      // only debt collector so far, sly deal, forced deal, deal breaker and any colour rent come later
+      if (card.type === "action" && card.action === "debt-collector") {
+        return { type: "play", cardId, targetId: choice.targetId };
+      }
+      return null;
     default:
       return null;
   }

@@ -18,6 +18,11 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
           Discard {turn.cardsToDiscard} card{turn.cardsToDiscard === 1 ? "" : "s"}
         </div>
       )}
+      {turn.owing.map((debt) => (
+        <div key={debt.playerId} data-cy="owing" className="mt-1 font-semibold text-amber-700">
+          Player {debt.playerId + 1} owes Player {debt.toPlayerId + 1} {debt.amount}M
+        </div>
+      ))}
       {moveError && (
         <div data-cy="move-error" className="mt-1 text-red-700">
           {moveError}

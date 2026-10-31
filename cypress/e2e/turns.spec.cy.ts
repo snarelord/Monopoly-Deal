@@ -1,4 +1,4 @@
-import { drawCards, findSeed } from "../support/dealHelper";
+import { drawCards, findSeed, takeSeat } from "../support/dealHelper";
 
 const isMoney = (c: { type: string }) => c.type === "money";
 const seed = findSeed((hand: any) => hand.filter(isMoney).length >= 3);
@@ -51,6 +51,7 @@ describe("Turns", () => {
   it("passes the turn, then counts the round after everyone has played", () => {
     drawCards();
     endTurn();
+    takeSeat();
     cy.get(info).should("have.attr", "data-player", "1")
       .and("have.attr", "data-turn", "2")
       .and("have.attr", "data-round", "1")
@@ -58,14 +59,15 @@ describe("Turns", () => {
 
     drawCards();
     endTurn();
+    takeSeat();
     cy.get(info).should("have.attr", "data-player", "0")
       .and("have.attr", "data-turn", "3")
       .and("have.attr", "data-round", "2");
   });
 
   it("makes me discard down to 7 before the turn passes", () => {
-    drawCards(); endTurn();   // player 1: 5 + 2 = 7 cards
-    drawCards(); endTurn();   // player 2: 7 cards
+    drawCards(); endTurn(); takeSeat();   // player 1: 5 + 2 = 7 cards
+    drawCards(); endTurn(); takeSeat();   // player 2: 7 cards
     drawCards();              // player 1 again: 9 cards
     endTurn();
 

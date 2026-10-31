@@ -1,17 +1,16 @@
 import { useState } from "react";
-import type { CardAction } from "@/lib/cardActions";
-import type { Colour } from "@/lib/types";
+import type { ActionChoice, CardAction } from "@/lib/cardActions";
 import { COLOUR_STYLES, colourName } from "@/components/colourStyles";
 
 interface PlayerCardActionsProps {
   actions: CardAction[];
   side: "left" | "right"; // which side of the card the menu opens on
-  onActionClick: (action: CardAction, colour?: Colour) => void;
+  onActionClick: (action: CardAction, choice?: ActionChoice) => void;
   onClose: () => void;
 }
 
 export default function PlayerCardActions({ actions, side, onActionClick, onClose }: PlayerCardActionsProps) {
-  // set when an action needs a colour first (wildcards)
+  // set when an action needs a colour (wildcards) or a player (debt collector) picked first
   const [choosing, setChoosing] = useState<CardAction | null>(null);
 
   return (
@@ -45,7 +44,22 @@ export default function PlayerCardActions({ actions, side, onActionClick, onClos
         </button>
       </div>
 
-      {choosing ? (
+      {choosing?.targets ? (
+        <>
+          <div className="px-1 text-xs font-semibold">Choose a player…</div>
+          {choosing.targets.map((targetId) => (
+            <button
+              key={targetId}
+              type="button"
+              data-cy={`target-${targetId}`}
+              onClick={() => onActionClick(choosing, { targetId })}
+              className="cursor-pointer rounded px-3 py-1 text-left hover:outline hover:outline-black"
+            >
+              Player {targetId + 1}
+            </button>
+          ))}
+        </>
+      ) : choosing?.colours ? (
         <>
           <div className="px-1 text-xs font-semibold">Place as…</div>
           <div className="grid grid-cols-2 gap-1">
@@ -54,7 +68,7 @@ export default function PlayerCardActions({ actions, side, onActionClick, onClos
                 key={colour}
                 type="button"
                 data-cy={`colour-${colour}`}
-                onClick={() => onActionClick(choosing, colour)}
+                onClick={() => onActionClick(choosing, { colour })}
                 className={`cursor-pointer rounded px-2 py-1 text-xs capitalize hover:outline hover:outline-black ${COLOUR_STYLES[colour]}`}
               >
                 {colourName(colour)}
@@ -70,7 +84,7 @@ export default function PlayerCardActions({ actions, side, onActionClick, onClos
             data-cy={`action-${action.id}`}
             disabled={action.disabled}
             title={action.disabled ? action.reason : undefined}
-            onClick={() => (action.colours ? setChoosing(action) : onActionClick(action))}
+            onClick={() => (action.colours || action.targets ? setChoosing(action) : onActionClick(action))}
             className="cursor-pointer rounded px-3 py-1 text-left hover:outline hover:outline-black focus-visible:outline focus-visible:outline-black disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:outline-none"
           >
             {action.label}

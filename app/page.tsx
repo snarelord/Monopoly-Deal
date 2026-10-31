@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { applyMove, beginGame, getTurnStatus } from "@/lib/gameHelpers";
+import { applyMove, beginGame, getTurnStatus, waitingOn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
+import PassScreen from "@/components/PassScreen";
 import type { OpponentView, GameState, Move } from "@/lib/types";
 
 export default function Home() {
   const [game, setGame] = useState<GameState | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
+  // HOT-SEAT ONLY: the player who last confirmed they're at the screen (see PassScreen)
+  const [seatedId, setSeatedId] = useState(0);
 
   useEffect(() => {
     const seed = new URLSearchParams(window.location.search).get("seed");
@@ -17,8 +20,9 @@ export default function Home() {
   if (!game) return null;
 
   const turn = getTurnStatus(game);
-  // hot-seat for now: whoever's turn it is is at the screen. online, this becomes the signed-in player
-  const me = game.players[game.currentPlayerIndex];
+  // HOT-SEAT ONLY: the screen shows whoever the game is waiting on: the current player,
+  // or someone who owes money. online, `me` becomes the signed-in player instead
+  const me = game.players.find((p) => p.id === waitingOn(game)[0])!;
   const others = game.players.filter((player) => player.id !== me.id);
 
   // always act as the player who clicked; the game logic decides if it's allowed
@@ -57,6 +61,7 @@ export default function Home() {
           onClick={() => {
             setGame(beginGame());
             setMoveError(null);
+            setSeatedId(0);
           }}
         >
           Deal again
@@ -70,6 +75,8 @@ export default function Home() {
           End turn
         </button>
       </div>
+      {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
+      {me.id !== seatedId && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
     </main>
   );
 }

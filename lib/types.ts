@@ -62,6 +62,10 @@ export const canBuild = (set: PropertySet, building: "house" | "hotel") =>
 export const buildableColours = (sets: PropertySet[], building: "house" | "hotel"): Colour[] =>
   [...new Set(sets.filter((s) => canBuild(s, building)).map((s) => s.colour))];
 
+// a two colour wildcard played as its second colour is shown upside down, so that colour is at the top
+export const isFlipped = (card: Card, setColour: Colour) =>
+  card.type === "wildcard" && card.colours !== "any" && card.colours[1] === setColour;
+
 // colours a wildcard in your pile can be moved to: a two colour one to its other colour,
 // the any colour one only into another set you've started
 export function wildcardMoves(sets: PropertySet[], cardId: string): Colour[] {

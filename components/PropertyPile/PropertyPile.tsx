@@ -1,12 +1,9 @@
 import { useState } from "react";
 import type { Card as CardType, Colour, PropertySet } from "@/lib/types";
-import { SETS, isComplete, wildcardMoves } from "@/lib/types";
+import { SETS, isComplete, isFlipped, wildcardMoves } from "@/lib/types";
 import { COLOUR_STYLES, colourName } from "../colourStyles";
 import Card from "@/components/Card";
 import CardPreview from "../PlayerHand/CardPreview";
-
-const isFlipped = (card: CardType, setColour: Colour) =>
-  card.type === "wildcard" && card.colours !== "any" && card.colours[1] === setColour;
 
 /*
   PLANNED: viewing another player's property pile

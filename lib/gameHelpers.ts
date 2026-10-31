@@ -1,10 +1,11 @@
 import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, Player, PropertySet } from "./types";
-import { COLOURS, isComplete, openSetColours } from "./types";
+import { COLOURS, completeColours, isComplete, openSetColours } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
 import { rentFor } from "./rent";
 
 export const PLAYS_PER_TURN = 3;
+export const SETS_TO_WIN = 3;
 export const HAND_LIMIT = 7;
 export const DEBT_COLLECTOR_AMOUNT = 5;
 export const BIRTHDAY_AMOUNT = 2;
@@ -45,7 +46,7 @@ export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 *
     currentPlayerIndex: 0,
     cardsPlayed: 0,
     isGameOver: false,
-    winner: null,
+    winnerId: null,
     pending: null,
     hasDrawnCards: false,
     turnNumber: 1,
@@ -54,11 +55,15 @@ export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 *
   };
 }
 
+function checkForWinner(game: GameState): GameState {
+  const winner = game.players.find((p) => completeColours(p).length >= SETS_TO_WIN);
+  if (!winner) return game;
+  return { ...game, isGameOver: true, winnerId: winner.id, pending: null };
+}
+
 const ok = (game: GameState): MoveResult => ({ ok: true, game });
 const fail = (error: string): MoveResult => ({ ok: false, error });
 
-// who the game needs to hear from next: normally whoever's turn it is, but while an action is pending
-// it's whoever has a move on each debt: the debtor, or the player who played it when they can counter a just say no
 export function waitingOn(game: GameState): number[] {
   if (game.pending) {
     const { debts, fromPlayerId } = game.pending;
@@ -70,10 +75,15 @@ export function waitingOn(game: GameState): number[] {
   return [game.players[game.currentPlayerIndex].id];
 }
 
-// the single way into the game logic: who is acting, and what they want to do.
-// PLANNED: once a move succeeds, append its entry to GameState.log here (see types.ts), in this one place
-// rather than in each move function
 export function applyMove(game: GameState, actorId: number, move: Move): MoveResult {
+  if (game.isGameOver) return fail("The game is over!");
+  const result = runMove(game, actorId, move);
+  if (!result.ok) return result;
+  return ok(checkForWinner(result.game));
+}
+
+// works out what a move does, applyMove wraps this
+function runMove(game: GameState, actorId: number, move: Move): MoveResult {
   if (!waitingOn(game).includes(actorId)) {
     return fail(game.pending ? "Waiting for other players to pay" : "It's not your turn");
   }
@@ -167,10 +177,6 @@ function targetProblem(game: GameState, playerId: number, targetId: number | und
   return null;
 }
 
-/*
-  a rent card, optionally with double the rent cards played alongside it (each one doubles it, each one is a play).
-  two colour rent charges every other player, the any colour rent card charges one chosen player
-*/
 function chargeRent(
   game: GameState,
   playerId: number,
@@ -297,14 +303,11 @@ function respond(
     return update(next, holdsSayNo(debtor) ? "responding" : payingOrLetOff(next, debt), sayNoCount);
   }
 
-  // the debtor said no: the player who played the action can say no back if they hold one and have a play left,
-  // otherwise it's cancelled for this debtor
   const attacker = next.players.find((p) => p.id === pending.fromPlayerId)!;
   const canCounter = holdsSayNo(attacker) && next.cardsPlayed < PLAYS_PER_TURN;
   return update(next, canCounter ? "countering" : "done", sayNoCount);
 }
 
-// going ahead with a debt: pay it, or let them off if there's nothing left to pay with
 function payingOrLetOff(game: GameState, debt: Debt): Debt["status"] {
   const debtor = game.players.find((p) => p.id === debt.playerId)!;
   return payableCards(debtor).length === 0 ? "done" : "paying";
@@ -356,7 +359,6 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
   });
 
   const debts = pending.debts.map((d) => (d === debt ? { ...d, status: "done" as const } : d));
-  // TODO: check for a winner here too, being paid in properties can complete a third set
   return ok(withDebts({ ...game, players }, { ...pending, debts }));
 }
 
@@ -441,6 +443,7 @@ export function getTurnStatus(game: GameState) {
     canEndTurn: game.hasDrawnCards && !game.mustDiscard && !game.isGameOver && !game.pending,
     mustDiscard: game.mustDiscard,
     cardsToDiscard: Math.max(0, player.hand.length - HAND_LIMIT),
+    winnerId: game.winnerId, // null until someone has SETS_TO_WIN complete sets of different colours
     // the card behind the pending action, and each debt still being dealt with (empty when nothing is pending)
     pendingCard: game.pending?.card ?? null,
     owing: (game.pending?.debts ?? [])

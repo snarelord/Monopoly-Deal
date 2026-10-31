@@ -13,6 +13,11 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
       <div className="font-semibold">Player {turn.currentPlayerId + 1}&apos;s turn</div>
       <div>Round {turn.round} · Turn {turn.turnNumber}</div>
       <div>Plays left: {turn.playsLeft}/{PLAYS_PER_TURN}</div>
+      {turn.winnerId !== null && (
+        <div data-cy="winner" className="mt-1 font-semibold text-green-700">
+          Player {turn.winnerId + 1} wins!
+        </div>
+      )}
       {turn.mustDiscard && (
         <div data-cy="discard-prompt" className="mt-1 font-semibold text-red-700">
           Discard {turn.cardsToDiscard} card{turn.cardsToDiscard === 1 ? "" : "s"}

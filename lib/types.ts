@@ -54,6 +54,10 @@ export const isComplete = (set: PropertySet) =>
 export const openSetColours = (sets: PropertySet[]): Colour[] =>
   [...new Set(sets.filter((s) => !isComplete(s)).map((s) => s.colour))];
 
+// colours a player has a complete set of. two complete sets of the same colour only count once
+export const completeColours = (player: Player): Colour[] =>
+  [...new Set(player.properties.filter(isComplete).map((s) => s.colour))];
+
 export interface Player {
   id: number;
   hand: Card[];
@@ -89,7 +93,7 @@ export interface GameState {
   currentPlayerIndex: number;
   cardsPlayed: number;
   isGameOver: boolean;
-  winner: Player | null;
+  winnerId: number | null;
   pending: PendingAction | null; // while set, the game waits on the players who still owe
   hasDrawnCards: boolean;
   /*

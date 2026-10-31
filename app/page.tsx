@@ -1,19 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { applyMove, beginGame, getTurnStatus, MAX_PLAYERS, MIN_PLAYERS, waitingOn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
 import GameSetup from "@/components/GameSetup";
 import PassScreen from "@/components/PassScreen";
 import type { OpponentView, GameState, Move } from "@/lib/types";
 
+function startFrom(search: string) {
+  const params = new URLSearchParams(search);
+  const seed = params.get("seed");
+  const players = params.get("players");
+  const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
+  return { count, game: seed || players ? beginGame(count, seed ? Number(seed) : undefined) : null };
+}
+
+const noSubscribe = () => () => {};
+
 export default function Home() {
-  const [game, setGame] = useState<GameState | null>(null);
+  // the url only exists in the browser (null while the server renders), so the game is set up there
+  const search = useSyncExternalStore(noSubscribe, () => window.location.search, () => null);
+  return search === null ? null : <HotSeatGame search={search} />;
+}
+
+function HotSeatGame({ search }: { search: string }) {
+  const [start] = useState(() => startFrom(search));
+  const [game, setGame] = useState<GameState | null>(start.game);
   const [moveError, setMoveError] = useState<string | null>(null);
   // HOT-SEAT ONLY: the player who last confirmed they're at the screen (see PassScreen)
   const [seatedId, setSeatedId] = useState(0);
-  const [settingUp, setSettingUp] = useState(false);
-  const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
+  const [settingUp, setSettingUp] = useState(start.game === null);
+  const [playerCount, setPlayerCount] = useState(start.count);
 
   function deal(count: number, seed?: number) {
     setPlayerCount(count);
@@ -22,17 +39,6 @@ export default function Home() {
     setSeatedId(0);
     setSettingUp(false);
   }
-
-  useEffect(() => {
-    // ?seed= or ?players= deals straight away (tests rely on this), otherwise choose the players first
-    const params = new URLSearchParams(window.location.search);
-    const seed = params.get("seed");
-    const players = params.get("players");
-    if (!seed && !players) return setSettingUp(true);
-    const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
-    setPlayerCount(count);
-    setGame(beginGame(count, seed ? Number(seed) : undefined));
-  }, []);
 
   if (settingUp) return <GameSetup initialCount={playerCount} onDeal={(count) => deal(count)} />;
   if (!game) return null;
@@ -64,7 +70,7 @@ export default function Home() {
   return (
     <main className="relative">
       <GameBoard
-        key={game.seed} // a new game starts with a fresh board (toasts already seen, etc)
+        key={game.seed}
         me={me}
         opponents={opponents}
         drawPileCount={game.deck.length}

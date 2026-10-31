@@ -3,8 +3,15 @@ import { MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
 
 const COUNTS = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
 
-export default function GameSetup({ initialCount, onDeal }: { initialCount: number; onDeal: (playerCount: number) => void }) {
+interface GameSetupProps {
+  initialCount: number;
+  initialPassScreens: boolean;
+  onDeal: (playerCount: number, passScreens: boolean) => void;
+}
+
+export default function GameSetup({ initialCount, initialPassScreens, onDeal }: GameSetupProps) {
   const [count, setCount] = useState(initialCount);
+  const [passScreens, setPassScreens] = useState(initialPassScreens);
 
   return (
     <main className="grid min-h-dvh place-items-center p-4">
@@ -36,11 +43,26 @@ export default function GameSetup({ initialCount, onDeal }: { initialCount: numb
 
         {/* HOT-SEAT ONLY: online, everyone joins with a room code instead */}
         <p className="text-xs text-black/60">Everyone plays on this device, passing it round between turns.</p>
+        <label className="flex cursor-pointer items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            data-cy="pass-screens"
+            checked={passScreens}
+            onChange={(event) => setPassScreens(event.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Pass-the-device screens
+            <span className="block text-xs text-black/60">
+              Hides each hand until the next player is ready. Turn off when playing on your own.
+            </span>
+          </span>
+        </label>
 
         <button
           type="button"
           data-cy="deal"
-          onClick={() => onDeal(count)}
+          onClick={() => onDeal(count, passScreens)}
           className="cursor-pointer rounded bg-green-700 py-2 text-white"
         >
           Deal

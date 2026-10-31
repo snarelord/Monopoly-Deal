@@ -8,13 +8,13 @@ const copies = (n: number, slug: string, card: DistributiveOmit<Card, "id">): Ca
 
 export const cardData: Card[] = [
   // money cards
-  ...copies(6, "money-1m", { type: "money", name: "1M", value: 1, image: "/cards/1m.png" }),
-  ...copies(5, "money-2m", { type: "money", name: "2M", value: 2, image: "/cards/2m.png" }),
-  ...copies(3, "money-3m", { type: "money", name: "3M", value: 3, image: "/cards/3m.png" }),
-  ...copies(3, "money-4m", { type: "money", name: "4M", value: 4, image: "/cards/4m.png" }),
-  ...copies(2, "money-5m", { type: "money", name: "5M", value: 5, image: "/cards/5m.png" }),
-  ...copies(1, "money-10m", { type: "money", name: "10M", value: 10, image: "/cards/10m.png" }),
-  ...copies(10, "pass-go", { type: "action", name: "Pass Go", value: 1, action: "pass-go", image: "/cards/pass-go.png" }),
+  ...copies(6, "money-1m", { type: "money", name: "1M", value: 1, image: "/cards/1m.webp" }),
+  ...copies(5, "money-2m", { type: "money", name: "2M", value: 2, image: "/cards/2m.webp" }),
+  ...copies(3, "money-3m", { type: "money", name: "3M", value: 3, image: "/cards/3m.webp" }),
+  ...copies(3, "money-4m", { type: "money", name: "4M", value: 4, image: "/cards/4m.webp" }),
+  ...copies(2, "money-5m", { type: "money", name: "5M", value: 5, image: "/cards/5m.webp" }),
+  ...copies(1, "money-10m", { type: "money", name: "10M", value: 10, image: "/cards/10m.webp" }),
+  ...copies(10, "pass-go", { type: "action", name: "Pass Go", value: 1, action: "pass-go", image: "/cards/pass-go.webp" }),
   // Property cards - Brown
   {
     id: "property-old-kent-road",
@@ -22,7 +22,7 @@ export const cardData: Card[] = [
     name: "Old Kent Road",
     value: 1,
     colour: "brown",
-    image: "/cards/old-kent-road.png",
+    image: "/cards/old-kent-road.webp",
   },
   {
     id: "property-whitechapel-road",
@@ -30,7 +30,7 @@ export const cardData: Card[] = [
     name: "Whitechapel Road",
     value: 1,
     colour: "brown",
-    image: "/cards/whitechapel-road.png",
+    image: "/cards/whitechapel-road.webp",
   },
   // Property cards - Light Blue
   {
@@ -39,7 +39,7 @@ export const cardData: Card[] = [
     name: "Euston Road",
     value: 1,
     colour: 'lightBlue',
-    image: "/cards/euston-road.png",
+    image: "/cards/euston-road.webp",
   },
   {
     id: "property-pentonville-road",
@@ -47,7 +47,7 @@ export const cardData: Card[] = [
     name: "Pentonville Road",
     value: 1,
     colour: 'lightBlue',
-    image: "/cards/pentonville-road.png",
+    image: "/cards/pentonville-road.webp",
   },
   {
     id: "property-the-angel-islington",
@@ -55,7 +55,7 @@ export const cardData: Card[] = [
     name: "The Angel Islington",
     value: 1,
     colour: 'lightBlue',
-    image: "/cards/the-angel-islington.png",
+    image: "/cards/the-angel-islington.webp",
   },
   // Property cards - Pink
   {
@@ -64,7 +64,7 @@ export const cardData: Card[] = [
     name: "Pall Mall",
     value: 2,
     colour: "pink",
-    image: "/cards/pall-mall.png",
+    image: "/cards/pall-mall.webp",
   },
   {
     id: "property-whitehall",
@@ -72,7 +72,7 @@ export const cardData: Card[] = [
     name: "Whitehall",
     value: 2,
     colour: "pink",
-    image: "/cards/whitehall.png",
+    image: "/cards/whitehall.webp",
   },
   {
     id: "property-northumberland-drive",
@@ -80,7 +80,7 @@ export const cardData: Card[] = [
     name: "Northumberland Drive",
     value: 2,
     colour: "pink",
-    image: "/cards/northumb-drive.png",
+    image: "/cards/northumb-drive.webp",
   },
   // Property cards - Orange
   {
@@ -89,7 +89,7 @@ export const cardData: Card[] = [
     name: "Vine Street",
     value: 2,
     colour: "orange",
-    image: "/cards/vine-street.png",
+    image: "/cards/vine-street.webp",
   },
   {
     id: "property-bow-street",
@@ -97,7 +97,7 @@ export const cardData: Card[] = [
     name: "Bow Street",
     value: 2,
     colour: "orange",
-    image: "/cards/bow-street.png",
+    image: "/cards/bow-street.webp",
   },
   {
     id: "property-marlborough-street",
@@ -105,7 +105,7 @@ export const cardData: Card[] = [
     name: "Marlborough Street",
     value: 2,
     colour: "orange",
-    image: "/cards/marlborough-street.png",
+    image: "/cards/marlborough-street.webp",
   },
 
   // Property cards - Red
@@ -115,7 +115,7 @@ export const cardData: Card[] = [
     name: "Strand",
     value: 3,
     colour: "red",
-    image: "/cards/strand.png",
+    image: "/cards/strand.webp",
   },
   {
     id: "property-fleet-street",
@@ -123,7 +123,7 @@ export const cardData: Card[] = [
     name: "Fleet Street",
     value: 3,
     colour: "red",
-    image: "/cards/fleet-street.png",
+    image: "/cards/fleet-street.webp",
   },
   {
     id: "property-trafalgar-square",
@@ -131,7 +131,7 @@ export const cardData: Card[] = [
     name: "Trafalgar Square",
     value: 3,
     colour: "red",
-    image: "/cards/trafalgar-square.png",
+    image: "/cards/trafalgar-square.webp",
   },
   // Property cards - Yellow
   {
@@ -140,7 +140,7 @@ export const cardData: Card[] = [
     name: "Piccadilly",
     value: 3,
     colour: "yellow",
-    image: "/cards/piccadilly.png",
+    image: "/cards/piccadilly.webp",
   },
   {
     id: "property-leicester-square",
@@ -148,7 +148,7 @@ export const cardData: Card[] = [
     name: "Leicester Square",
     value: 3,
     colour: "yellow",
-    image: "/cards/leicester-square.png",
+    image: "/cards/leicester-square.webp",
   },
   {
     id: "property-coventry-street",
@@ -156,7 +156,7 @@ export const cardData: Card[] = [
     name: "Coventry Street",
     value: 3,
     colour: "yellow",
-    image: "/cards/coventry-street.png",
+    image: "/cards/coventry-street.webp",
   },
   // Property cards - Green
   {
@@ -165,7 +165,7 @@ export const cardData: Card[] = [
     name: "Bond Street",
     value: 4,
     colour: "green",
-    image: "/cards/bond-street.png",
+    image: "/cards/bond-street.webp",
   },
   {
     id: "property-oxford-street",
@@ -173,7 +173,7 @@ export const cardData: Card[] = [
     name: "Oxford Street",
     value: 4,
     colour: "green",
-    image: "/cards/oxford-street.png",
+    image: "/cards/oxford-street.webp",
   },
   {
     id: "property-regent-street",
@@ -181,7 +181,7 @@ export const cardData: Card[] = [
     name: "Regent Street",
     value: 4,
     colour: "green",
-    image: "/cards/regent-street.png",
+    image: "/cards/regent-street.webp",
   },
   // Property cards - Dark Blue
   {
@@ -190,7 +190,7 @@ export const cardData: Card[] = [
     name: "Park Lane",
     value: 4,
     colour: "darkBlue",
-    image: "/cards/park-lane.png",
+    image: "/cards/park-lane.webp",
   },
   {
     id: "property-mayfair",
@@ -198,7 +198,7 @@ export const cardData: Card[] = [
     name: "Mayfair",
     value: 4,
     colour: "darkBlue",
-    image: "/cards/mayfair.png",
+    image: "/cards/mayfair.webp",
   },
   // Property cards - Black
   {
@@ -207,7 +207,7 @@ export const cardData: Card[] = [
     name: "King's Cross Station",
     value: 2,
     colour: "railroad",
-    image: "/cards/kings-cross-station.png",
+    image: "/cards/kings-cross-station.webp",
   },
   {
     id: "station-marylebone-station",
@@ -215,7 +215,7 @@ export const cardData: Card[] = [
     name: "Marylebone Station",
     value: 2,
     colour: "railroad",
-    image: "/cards/marylebone-station.png",
+    image: "/cards/marylebone-station.webp",
   },
   {
     id: "station-fenchurch-street-station",
@@ -223,7 +223,7 @@ export const cardData: Card[] = [
     name: "Fenchurch St. Station",
     value: 2,
     colour: "railroad",
-    image: "/cards/fenchurch-st-station.png",
+    image: "/cards/fenchurch-st-station.webp",
   },
   {
     id: "station-liverpool-street-station",
@@ -231,7 +231,7 @@ export const cardData: Card[] = [
     name: "Liverpool St. Station",
     value: 2,
     colour: "railroad",
-    image: "/cards/liverpool-st-station.png",
+    image: "/cards/liverpool-st-station.webp",
   },
   // Utility cards
   {
@@ -240,7 +240,7 @@ export const cardData: Card[] = [
     name: "Electric Company",
     value: 2,
     colour: "utility",
-    image: "/cards/electric-company.png",
+    image: "/cards/electric-company.webp",
   },
   {
     id: "utilities-water-works",
@@ -248,7 +248,7 @@ export const cardData: Card[] = [
     name: "Water Works",
     value: 2,
     colour: "utility",
-    image: "/cards/water-works.png",
+    image: "/cards/water-works.webp",
   },
   // Wildcards
   {
@@ -257,7 +257,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 2,
     colours: ["orange", "pink"],
-    image: "/cards/orange-pink-wild-property.png",
+    image: "/cards/orange-pink-wild-property.webp",
   },
   {
     id: "wildcard-orange-pink-2",
@@ -265,7 +265,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 2,
     colours: ["orange", "pink"],
-    image: "/cards/orange-pink-wild-property.png",
+    image: "/cards/orange-pink-wild-property.webp",
   },
   {
     id: "wildcard-red-yellow-1",
@@ -273,7 +273,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 3,
     colours: ["yellow", "red"],
-    image: "/cards/yellow-red-wild-property.png",
+    image: "/cards/yellow-red-wild-property.webp",
   },
   {
     id: "wildcard-red-yellow-2",
@@ -281,7 +281,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 3,
     colours: ["yellow", "red"],
-    image: "/cards/yellow-red-wild-property.png",
+    image: "/cards/yellow-red-wild-property.webp",
   },
   {
     id: "wildcard-dark-blue-green-1",
@@ -289,7 +289,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 4,
     colours: ["green", "darkBlue"],
-    image: "/cards/green-blue-wild-property.png",
+    image: "/cards/green-blue-wild-property.webp",
   },
   {
     id: "wildcard-black-green-1",
@@ -297,7 +297,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 4,
     colours: ["railroad", "green"],
-    image: "/cards/black-green-wild-property.png",
+    image: "/cards/black-green-wild-property.webp",
   },
   {
     id: "wildcard-black-light-blue-1",
@@ -305,7 +305,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 4,
     colours: ["railroad", "lightBlue"],
-    image: "/cards/black-light-blue-wild-property.png",
+    image: "/cards/black-light-blue-wild-property.webp",
   },
   {
     id: "wildcard-black-mint-1",
@@ -313,7 +313,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 2,
     colours: ["railroad", "utility"],
-    image: "/cards/black-mint-wild-property.png",
+    image: "/cards/black-mint-wild-property.webp",
   },
   {
     id: "wildcard-brown-light-blue-1",
@@ -321,7 +321,7 @@ export const cardData: Card[] = [
     name: "Wild Property",
     value: 1,
     colours: ["brown", "lightBlue"],
-    image: "/cards/brown-light-blue-wild-property.png",
+    image: "/cards/brown-light-blue-wild-property.webp",
   },
   {
     id: "wildcard-any-1",
@@ -329,7 +329,7 @@ export const cardData: Card[] = [
     name: "Any Colour Wildcard",
     value: 0, // worth nothing in the real rules, it can't be banked or used to pay
     colours: "any",
-    image: "/cards/wild-property.png",
+    image: "/cards/wild-property.webp",
   },
   {
     id: "wildcard-any-2",
@@ -337,7 +337,7 @@ export const cardData: Card[] = [
     name: "Any Colour Wildcard",
     value: 0, // worth nothing in the real rules, it can't be banked or used to pay
     colours: "any",
-    image: "/cards/wild-property.png",
+    image: "/cards/wild-property.webp",
   },
   {
     id: "action-debt-collector-1",
@@ -345,7 +345,7 @@ export const cardData: Card[] = [
     name: "Debt Collector",
     value: 3,
     action: "debt-collector",
-    image: "/cards/debt-collector.png",
+    image: "/cards/debt-collector.webp",
   },
   {
     id: "action-debt-collector-2",
@@ -353,7 +353,7 @@ export const cardData: Card[] = [
     name: "Debt Collector",
     value: 3,
     action: "debt-collector",
-    image: "/cards/debt-collector.png",
+    image: "/cards/debt-collector.webp",
   },
   {
     id: "action-debt-collector-3",
@@ -361,7 +361,7 @@ export const cardData: Card[] = [
     name: "Debt Collector",
     value: 3,
     action: "debt-collector",
-    image: "/cards/debt-collector.png",
+    image: "/cards/debt-collector.webp",
   },
   {
     id: "action-birthday-1",
@@ -369,7 +369,7 @@ export const cardData: Card[] = [
     name: "It's My Birthday",
     value: 2,
     action: "birthday",
-    image: "/cards/birthday.png",
+    image: "/cards/birthday.webp",
   },
   {
     id: "action-birthday-2",
@@ -377,7 +377,7 @@ export const cardData: Card[] = [
     name: "It's My Birthday",
     value: 2,
     action: "birthday",
-    image: "/cards/birthday.png",
+    image: "/cards/birthday.webp",
   },
   {
     id: "action-birthday-3",
@@ -385,7 +385,7 @@ export const cardData: Card[] = [
     name: "It's My Birthday",
     value: 2,
     action: "birthday",
-    image: "/cards/birthday.png",
+    image: "/cards/birthday.webp",
   },
   {
     id: "action-deal-breaker-1",
@@ -393,7 +393,7 @@ export const cardData: Card[] = [
     name: "Deal Breaker",
     value: 5,
     action: "deal-breaker",
-    image: "/cards/deal-breaker.png",
+    image: "/cards/deal-breaker.webp",
   },
   {
     id: "action-deal-breaker-2",
@@ -401,7 +401,7 @@ export const cardData: Card[] = [
     name: "Deal Breaker",
     value: 5,
     action: "deal-breaker",
-    image: "/cards/deal-breaker.png",
+    image: "/cards/deal-breaker.webp",
   },
   {
     id: "action-sly-deal-1",
@@ -409,7 +409,7 @@ export const cardData: Card[] = [
     name: "Sly Deal",
     value: 3,
     action: "sly-deal",
-    image: "/cards/sly-deal.png",
+    image: "/cards/sly-deal.webp",
   },
   {
     id: "action-sly-deal-2",
@@ -417,7 +417,7 @@ export const cardData: Card[] = [
     name: "Sly Deal",
     value: 3,
     action: "sly-deal",
-    image: "/cards/sly-deal.png",
+    image: "/cards/sly-deal.webp",
   },
   {
     id: "action-sly-deal-3",
@@ -425,7 +425,7 @@ export const cardData: Card[] = [
     name: "Sly Deal",
     value: 3,
     action: "sly-deal",
-    image: "/cards/sly-deal.png",
+    image: "/cards/sly-deal.webp",
   },
   {
     id: "action-forced-deal-1",
@@ -433,7 +433,7 @@ export const cardData: Card[] = [
     name: "Forced Deal",
     value: 3,
     action: "forced-deal",
-    image: "/cards/forced-deal.png",
+    image: "/cards/forced-deal.webp",
   },
   {
     id: "action-forced-deal-2",
@@ -441,7 +441,7 @@ export const cardData: Card[] = [
     name: "Forced Deal",
     value: 3,
     action: "forced-deal",
-    image: "/cards/forced-deal.png",
+    image: "/cards/forced-deal.webp",
   },
   {
     id: "action-forced-deal-3",
@@ -449,7 +449,7 @@ export const cardData: Card[] = [
     name: "Forced Deal",
     value: 3,
     action: "forced-deal",
-    image: "/cards/forced-deal.png",
+    image: "/cards/forced-deal.webp",
   },
   {
     id: "action-just-say-no-1",
@@ -457,7 +457,7 @@ export const cardData: Card[] = [
     name: "Just Say No",
     value: 4,
     action: "just-say-no",
-    image: "/cards/just-say-no.png",
+    image: "/cards/just-say-no.webp",
   },
   {
     id: "action-just-say-no-2",
@@ -465,7 +465,7 @@ export const cardData: Card[] = [
     name: "Just Say No",
     value: 4,
     action: "just-say-no",
-    image: "/cards/just-say-no.png",
+    image: "/cards/just-say-no.webp",
   },
   {
     id: "action-just-say-no-3",
@@ -473,7 +473,7 @@ export const cardData: Card[] = [
     name: "Just Say No",
     value: 4,
     action: "just-say-no",
-    image: "/cards/just-say-no.png",
+    image: "/cards/just-say-no.webp",
   },
   {
     id: "action-rent-brown-light-blue-1",
@@ -481,7 +481,7 @@ export const cardData: Card[] = [
     name: "Rent: Brown/Light Blue",
     value: 1,
     colours: ["brown", "lightBlue"],
-    image: "/cards/rent-brown-or-light-blue.png",
+    image: "/cards/rent-brown-or-light-blue.webp",
   },
   {
     id: "action-rent-brown-light-blue-2",
@@ -489,7 +489,7 @@ export const cardData: Card[] = [
     value: 1,
     type: "rent",
     colours: ["brown", "lightBlue"],
-    image: "/cards/rent-brown-or-light-blue.png",
+    image: "/cards/rent-brown-or-light-blue.webp",
   },
   {
     id: "action-rent-pink-orange-1",
@@ -497,7 +497,7 @@ export const cardData: Card[] = [
     name: "Rent: Pink/Orange",
     value: 1,
     colours: ["pink", "orange"],
-    image: "/cards/rent-pink-or-orange.png",
+    image: "/cards/rent-pink-or-orange.webp",
   },
   {
     id: "action-rent-pink-orange-2",
@@ -505,7 +505,7 @@ export const cardData: Card[] = [
     name: "Rent: Pink/Orange",
     value: 1,
     colours: ["pink", "orange"],
-    image: "/cards/rent-pink-or-orange.png",
+    image: "/cards/rent-pink-or-orange.webp",
   },
   {
     id: "action-rent-red-yellow-1",
@@ -513,7 +513,7 @@ export const cardData: Card[] = [
     name: "Rent: Red/Yellow",
     value: 1,
     colours: ["red", "yellow"],
-    image: "/cards/rent-red-or-yellow.png",
+    image: "/cards/rent-red-or-yellow.webp",
   },
   {
     id: "action-rent-red-yellow-2",
@@ -521,7 +521,7 @@ export const cardData: Card[] = [
     name: "Rent: Red/Yellow",
     value: 1,
     colours: ["red", "yellow"],
-    image: "/cards/rent-red-or-yellow.png",
+    image: "/cards/rent-red-or-yellow.webp",
   },
   {
     id: "action-rent-dark-blue-green-1",
@@ -529,7 +529,7 @@ export const cardData: Card[] = [
     name: "Rent: Dark Blue/Green",
     value: 1,
     colours: ["green", "darkBlue"],
-    image: "/cards/rent-dark-blue-or-green.png",
+    image: "/cards/rent-dark-blue-or-green.webp",
   },
   {
     id: "action-rent-dark-blue-green-2",
@@ -537,7 +537,7 @@ export const cardData: Card[] = [
     name: "Rent: Dark Blue/Green",
     value: 1,
     colours: ["green", "darkBlue"],
-    image: "/cards/rent-dark-blue-or-green.png",
+    image: "/cards/rent-dark-blue-or-green.webp",
   },
   {
     id: "action-rent-mint-black-1",
@@ -545,7 +545,7 @@ export const cardData: Card[] = [
     name: "Rent: Mint/Black",
     value: 1,
     colours: ["utility", "railroad"],
-    image: "/cards/rent-mint-or-black.png",
+    image: "/cards/rent-mint-or-black.webp",
   },
   {
     id: "action-rent-mint-black-2",
@@ -553,7 +553,7 @@ export const cardData: Card[] = [
     name: "Rent: Mint/Black",
     value: 1,
     colours: ["utility", "railroad"],
-    image: "/cards/rent-mint-or-black.png",
+    image: "/cards/rent-mint-or-black.webp",
   },
   {
     id: "action-any-colour-1",
@@ -561,7 +561,7 @@ export const cardData: Card[] = [
     name: "Rent: Any",
     value: 3,
     colours: "any",
-    image: "/cards/rent-any-colour.png",
+    image: "/cards/rent-any-colour.webp",
   },
   {
     id: "action-any-colour-2",
@@ -569,7 +569,7 @@ export const cardData: Card[] = [
     name: "Rent: Any",
     value: 3,
     colours: "any",
-    image: "/cards/rent-any-colour.png",
+    image: "/cards/rent-any-colour.webp",
   },
   {
     id: "action-any-colour-3",
@@ -577,7 +577,7 @@ export const cardData: Card[] = [
     name: "Rent: Any",
     value: 3,
     colours: "any",
-    image: "/cards/rent-any-colour.png",
+    image: "/cards/rent-any-colour.webp",
   },
   // double the rent cards
   {
@@ -586,7 +586,7 @@ export const cardData: Card[] = [
     name: "Double the Rent",
     value: 1,
     action: "double-the-rent",
-    image: "/cards/double-rent.png",
+    image: "/cards/double-rent.webp",
   },
   {
     id: "double-the-rent-2",
@@ -594,7 +594,7 @@ export const cardData: Card[] = [
     name: "Double the Rent",
     value: 1,
     action: "double-the-rent",
-    image: "/cards/double-rent.png",
+    image: "/cards/double-rent.webp",
   },
   // House and Hotel cards
   {
@@ -603,7 +603,7 @@ export const cardData: Card[] = [
     name: "House",
     value: 3,
     action: "house",
-    image: "/cards/house.png",
+    image: "/cards/house.webp",
   },
   {
     id: "house-2",
@@ -611,7 +611,7 @@ export const cardData: Card[] = [
     name: "House",
     value: 3,
     action: "house",
-    image: "/cards/house.png",
+    image: "/cards/house.webp",
   },
   {
     id: "house-3",
@@ -619,7 +619,7 @@ export const cardData: Card[] = [
     name: "House",
     value: 3,
     action: "house",
-    image: "/cards/house.png",
+    image: "/cards/house.webp",
   },
   {
     id: "hotel-1",
@@ -627,7 +627,7 @@ export const cardData: Card[] = [
     name: "Hotel",
     value: 4,
     action: "hotel",
-    image: "/cards/hotel.png",
+    image: "/cards/hotel.webp",
   },
   {
     id: "hotel-2",
@@ -635,8 +635,6 @@ export const cardData: Card[] = [
     name: "Hotel",
     value: 4,
     action: "hotel",
-    image: "/cards/hotel.png",
+    image: "/cards/hotel.webp",
   },
 ];
-
-console.log("Total cards in cardDataaaaa:", cardData.length);

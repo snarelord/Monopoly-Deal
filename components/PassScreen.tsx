@@ -4,7 +4,6 @@
 // PLANNED (cheap, since this goes away online):
 // - show what's happened since this player last had the screen, from GameState.log (see types.ts),
 //   e.g. "Player 1 played Debt Collector on you (5M)", so it's a catch up rather than just a blocker
-// - a dev toggle to skip it when testing alone, e.g. ?hotseat=open in page.tsx (tests and normal play keep it)
 export default function PassScreen({ playerId, onReady }: { playerId: number; onReady: () => void }) {
   return (
     <div data-cy="pass-screen" className="fixed inset-0 z-50 grid place-items-center bg-neutral-800 p-4 text-white">

@@ -1,40 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { applyMove, beginGame, getTurnStatus, MAX_PLAYERS, MIN_PLAYERS, waitingOn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
 import GameSetup from "@/components/GameSetup";
 import PassScreen from "@/components/PassScreen";
 import type { OpponentView, GameState, Move } from "@/lib/types";
 
+function startFrom(search: string) {
+  const params = new URLSearchParams(search);
+  const seed = params.get("seed");
+  const players = params.get("players");
+  const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
+  return {
+    count,
+    game: seed || players ? beginGame(count, seed ? Number(seed) : undefined) : null,
+    passScreens: params.get("hotseat") !== "open", // ?hotseat=open skips the pass screens
+  };
+}
+
+const noSubscribe = () => () => {};
+
 export default function Home() {
-  const [game, setGame] = useState<GameState | null>(null);
+  // the url only exists in the browser (null while the server renders), so the game is set up there
+  const search = useSyncExternalStore(noSubscribe, () => window.location.search, () => null);
+  return search === null ? null : <HotSeatGame search={search} />;
+}
+
+function HotSeatGame({ search }: { search: string }) {
+  const [start] = useState(() => startFrom(search));
+  const [game, setGame] = useState<GameState | null>(start.game);
   const [moveError, setMoveError] = useState<string | null>(null);
   // HOT-SEAT ONLY: the player who last confirmed they're at the screen (see PassScreen)
   const [seatedId, setSeatedId] = useState(0);
-  const [settingUp, setSettingUp] = useState(false);
-  const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
+  const [settingUp, setSettingUp] = useState(start.game === null);
+  const [playerCount, setPlayerCount] = useState(start.count);
+  // HOT-SEAT ONLY: whether to hide hands behind a pass screen when the device changes hands
+  const [passScreens, setPassScreens] = useState(start.passScreens);
 
-  function deal(count: number, seed?: number) {
+  function deal(count: number, withPassScreens: boolean) {
     setPlayerCount(count);
-    setGame(beginGame(count, seed));
+    setPassScreens(withPassScreens);
+    setGame(beginGame(count));
     setMoveError(null);
     setSeatedId(0);
     setSettingUp(false);
   }
 
-  useEffect(() => {
-    // ?seed= or ?players= deals straight away (tests rely on this), otherwise choose the players first
-    const params = new URLSearchParams(window.location.search);
-    const seed = params.get("seed");
-    const players = params.get("players");
-    if (!seed && !players) return setSettingUp(true);
-    const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
-    setPlayerCount(count);
-    setGame(beginGame(count, seed ? Number(seed) : undefined));
-  }, []);
-
-  if (settingUp) return <GameSetup initialCount={playerCount} onDeal={(count) => deal(count)} />;
+  if (settingUp) {
+    return <GameSetup initialCount={playerCount} initialPassScreens={passScreens} onDeal={deal} />;
+  }
   if (!game) return null;
 
   const turn = getTurnStatus(game);
@@ -42,6 +57,7 @@ export default function Home() {
   // or someone who owes money. online, `me` becomes the signed-in player instead
   const me = game.players.find((p) => p.id === waitingOn(game)[0])!;
   const others = game.players.filter((player) => player.id !== me.id);
+  const waitingForSeat = passScreens && me.id !== seatedId;
 
   // always act as the player who clicked; the game logic decides if it's allowed
   function dispatch(move: Move) {
@@ -64,7 +80,7 @@ export default function Home() {
   return (
     <main className="relative">
       <GameBoard
-        key={game.seed} // a new game starts with a fresh board (toasts already seen, etc)
+        key={game.seed}
         me={me}
         opponents={opponents}
         drawPileCount={game.deck.length}
@@ -75,10 +91,10 @@ export default function Home() {
         onMove={dispatch}
         onNewGame={() => setSettingUp(true)}
         log={game.log}
-        paused={me.id !== seatedId}
+        paused={waitingForSeat}
       />
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
-      {me.id !== seatedId && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
+      {waitingForSeat && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
     </main>
   );
 }

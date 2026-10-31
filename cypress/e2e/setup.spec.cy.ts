@@ -36,4 +36,26 @@ describe("Choosing the number of players", () => {
     }
     cy.get('[data-cy="turn-info"]').should("have.attr", "data-round", "2");
   });
+
+  it("skips the pass screens when they're turned off, and remembers that", () => {
+    cy.visit("/");
+    cy.get('[data-cy="pass-screens"]').should("be.checked").uncheck();
+    cy.get('[data-cy="deal"]').click();
+
+    drawCards();
+    cy.get('[data-cy="end-turn"]').click();
+    cy.get('[data-cy="pass-screen"]').should("not.exist");
+    cy.get('[data-cy="turn-info"]').should("have.attr", "data-player", "1");
+
+    cy.get('[data-cy="new-game"]').click();
+    cy.get('[data-cy="pass-screens"]').should("not.be.checked");
+  });
+
+  it("skips the pass screens with ?hotseat=open", () => {
+    cy.visit("/?players=2&hotseat=open");
+    drawCards();
+    cy.get('[data-cy="end-turn"]').click();
+    cy.get('[data-cy="pass-screen"]').should("not.exist");
+    cy.get('[data-cy="turn-info"]').should("have.attr", "data-player", "1");
+  });
 });

@@ -12,7 +12,11 @@ function startFrom(search: string) {
   const seed = params.get("seed");
   const players = params.get("players");
   const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
-  return { count, game: seed || players ? beginGame(count, seed ? Number(seed) : undefined) : null };
+  return {
+    count,
+    game: seed || players ? beginGame(count, seed ? Number(seed) : undefined) : null,
+    passScreens: params.get("hotseat") !== "open", // ?hotseat=open skips the pass screens
+  };
 }
 
 const noSubscribe = () => () => {};
@@ -31,16 +35,21 @@ function HotSeatGame({ search }: { search: string }) {
   const [seatedId, setSeatedId] = useState(0);
   const [settingUp, setSettingUp] = useState(start.game === null);
   const [playerCount, setPlayerCount] = useState(start.count);
+  // HOT-SEAT ONLY: whether to hide hands behind a pass screen when the device changes hands
+  const [passScreens, setPassScreens] = useState(start.passScreens);
 
-  function deal(count: number, seed?: number) {
+  function deal(count: number, withPassScreens: boolean) {
     setPlayerCount(count);
-    setGame(beginGame(count, seed));
+    setPassScreens(withPassScreens);
+    setGame(beginGame(count));
     setMoveError(null);
     setSeatedId(0);
     setSettingUp(false);
   }
 
-  if (settingUp) return <GameSetup initialCount={playerCount} onDeal={(count) => deal(count)} />;
+  if (settingUp) {
+    return <GameSetup initialCount={playerCount} initialPassScreens={passScreens} onDeal={deal} />;
+  }
   if (!game) return null;
 
   const turn = getTurnStatus(game);
@@ -48,6 +57,7 @@ function HotSeatGame({ search }: { search: string }) {
   // or someone who owes money. online, `me` becomes the signed-in player instead
   const me = game.players.find((p) => p.id === waitingOn(game)[0])!;
   const others = game.players.filter((player) => player.id !== me.id);
+  const waitingForSeat = passScreens && me.id !== seatedId;
 
   // always act as the player who clicked; the game logic decides if it's allowed
   function dispatch(move: Move) {
@@ -81,10 +91,10 @@ function HotSeatGame({ search }: { search: string }) {
         onMove={dispatch}
         onNewGame={() => setSettingUp(true)}
         log={game.log}
-        paused={me.id !== seatedId}
+        paused={waitingForSeat}
       />
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
-      {me.id !== seatedId && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
+      {waitingForSeat && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
     </main>
   );
 }

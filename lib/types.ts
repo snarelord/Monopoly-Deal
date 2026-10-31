@@ -43,8 +43,9 @@ export type Card = MoneyCard | PropertyCard | WildCard | RentCard | ActionCard;
 export interface PropertySet {
   colour: Colour;
   cards: (PropertyCard | WildCard)[];
-  houses: number;
-  hotels: number;
+  // buildings only sit on complete sets, and a hotel only with a house (anything else goes to the bank)
+  house: ActionCard | null;
+  hotel: ActionCard | null;
 }
 
 export const isComplete = (set: PropertySet) =>
@@ -53,6 +54,13 @@ export const isComplete = (set: PropertySet) =>
 // colours with a set that's started but not finished, the any colour wildcard can only join one of these
 export const openSetColours = (sets: PropertySet[]): Colour[] =>
   [...new Set(sets.filter((s) => !isComplete(s)).map((s) => s.colour))];
+
+// a complete set (not railroads or utilities) can take one house, then one hotel on top
+export const canBuild = (set: PropertySet, building: "house" | "hotel") =>
+  isComplete(set) && SETS[set.colour].buildable && (building === "house" ? !set.house : !!set.house && !set.hotel);
+
+export const buildableColours = (sets: PropertySet[], building: "house" | "hotel"): Colour[] =>
+  [...new Set(sets.filter((s) => canBuild(s, building)).map((s) => s.colour))];
 
 // colours a player has a complete set of. two complete sets of the same colour only count once
 export const completeColours = (player: Player): Colour[] =>
@@ -97,7 +105,7 @@ export interface GameState {
   pending: PendingAction | null; // while set, the game waits on the players who still owe
   hasDrawnCards: boolean;
   /*
-    PLANNED: replace this unused field with a game log, `log: LogEntry[]`, one entry per successful move.
+    TODO PLANNED: replace this unused field with a game log, `log: LogEntry[]`, one entry per successful move.
     structured, not strings, so the UI can render it however it likes and it's what gets broadcast online:
       type LogEntry = { turn: number; playerId: number } & (
         | { kind: "drew"; count: number }        // a count only, drawn cards are private
@@ -133,7 +141,8 @@ export type Move =
   // answering a pending action. debtorId says which debt, the player who played the action needs it
   // when several players have said no to them (birthday, two colour rent)
   | { type: "just-say-no"; cardId: string; debtorId?: number }
-  | { type: "accept"; debtorId?: number };
+  | { type: "accept"; debtorId?: number }
+  | { type: "build"; cardId: string; colour: Colour };
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 

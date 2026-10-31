@@ -1,5 +1,5 @@
 import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, Player, PropertySet } from "./types";
-import { COLOURS, completeColours, isComplete, openSetColours } from "./types";
+import { COLOURS, canBuild, completeColours, isComplete, openSetColours } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
 import { rentFor } from "./rent";
@@ -79,7 +79,28 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
   if (game.isGameOver) return fail("The game is over!");
   const result = runMove(game, actorId, move);
   if (!result.ok) return result;
-  return ok(checkForWinner(result.game));
+  return ok(checkForWinner(tidySets(result.game)));
+}
+
+/*
+  keeps every player's sets tidy after a move: a set that's no longer complete (e.g. paid away a property)
+  loses its buildings to the owner's bank, a hotel without a house goes too, and empty sets are removed
+*/
+function tidySets(game: GameState): GameState {
+  return {
+    ...game,
+    players: game.players.map((p) => {
+      const bank = [...p.bank];
+      const properties = p.properties.map((set) => {
+        const keepHouse = isComplete(set) && set.house;
+        const keepHotel = keepHouse && set.hotel;
+        if (set.house && !keepHouse) bank.push(set.house);
+        if (set.hotel && !keepHotel) bank.push(set.hotel);
+        return { ...set, house: keepHouse || null, hotel: keepHotel || null };
+      });
+      return { ...p, bank, properties: properties.filter((set) => set.cards.length > 0) };
+    }),
+  };
 }
 
 // works out what a move does, applyMove wraps this
@@ -110,6 +131,8 @@ function runMove(game: GameState, actorId: number, move: Move): MoveResult {
       return discardCard(game, actorId, move.cardId);
     case "rent":
       return chargeRent(game, actorId, move.cardId, move.colour, move.targetId, move.doubleRentIds ?? []);
+    case "build":
+      return build(game, actorId, move.cardId, move.colour);
     case "pay":
       return fail("There's nothing to pay");
     case "just-say-no":
@@ -330,28 +353,33 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
     return fail(`That's ${total}M, you owe ${debt.amount}M`);
   }
 
-  // money goes into the receiver's bank, properties into their property pile
+  // money and buildings go into the receiver's bank, properties into their property pile
   // (wildcards keep the colour they were being used as)
+  const isPaid = (c: Card | null) => !!c && cardIds.includes(c.id);
   const fromSets = payer.properties.flatMap((set) =>
-    set.cards.filter((c) => cardIds.includes(c.id)).map((card) => ({ card, colour: set.colour })),
+    set.cards.filter(isPaid).map((card) => ({ card, colour: set.colour })),
   );
-  const fromBank = payer.bank.filter((c) => cardIds.includes(c.id));
+  const fromBank = payer.bank.filter(isPaid);
+  const buildings = payer.properties.flatMap((set) => [set.house, set.hotel]).filter(isPaid) as Card[];
 
+  // sets left incomplete (or empty) are sorted out by tidySets after the move
   const players = game.players.map((p) => {
     if (p.id === playerId) {
       return {
         ...p,
-        bank: p.bank.filter((c) => !cardIds.includes(c.id)),
-        properties: p.properties
-          .map((set) => ({ ...set, cards: set.cards.filter((c) => !cardIds.includes(c.id)) }))
-          .filter((set) => set.cards.length > 0),
-        // TODO: houses and hotels on a set that's no longer complete
+        bank: p.bank.filter((c) => !isPaid(c)),
+        properties: p.properties.map((set) => ({
+          ...set,
+          cards: set.cards.filter((c) => !isPaid(c)),
+          house: isPaid(set.house) ? null : set.house,
+          hotel: isPaid(set.hotel) ? null : set.hotel,
+        })),
       };
     }
     if (p.id === pending.fromPlayerId) {
       return {
         ...p,
-        bank: [...p.bank, ...fromBank],
+        bank: [...p.bank, ...fromBank, ...buildings],
         properties: fromSets.reduce((sets, { card, colour }) => addToSet(sets, card, colour), p.properties),
       };
     }
@@ -366,8 +394,36 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
 function addToSet(sets: PropertySet[], card: Card, colour: Colour): PropertySet[] {
   if (card.type !== "property" && card.type !== "wildcard") return sets;
   const open = sets.findIndex((s) => s.colour === colour && !isComplete(s));
-  if (open < 0) return [...sets, { colour, cards: [card], houses: 0, hotels: 0 }];
+  if (open < 0) return [...sets, { colour, cards: [card], house: null, hotel: null }];
   return sets.map((s, i) => (i === open ? { ...s, cards: [...s.cards, card] } : s));
+}
+
+// a house or hotel onto a complete set of that colour (see canBuild for the rules)
+function build(game: GameState, playerId: number, cardId: string, colour: Colour): MoveResult {
+  const found = findPlayable(game, playerId, cardId);
+  if (typeof found === "string") return fail(found);
+  const { player, card } = found;
+
+  if (card.type !== "action" || (card.action !== "house" && card.action !== "hotel")) {
+    return fail("Only houses and hotels can be built");
+  }
+  const building = card.action;
+  const target = player.properties.findIndex((s) => s.colour === colour && canBuild(s, building));
+  if (target < 0) {
+    return fail(building === "house"
+      ? "A house needs a complete set without one (not railroads or utilities)"
+      : "A hotel needs a complete set with a house and no hotel");
+  }
+
+  return ok({
+    ...game,
+    players: updatePlayer(game, playerId, (p) => ({
+      ...p,
+      hand: withoutCard(p.hand, cardId),
+      properties: p.properties.map((s, i) => (i === target ? { ...s, [building]: card } : s)),
+    })),
+    cardsPlayed: game.cardsPlayed + 1,
+  });
 }
 
 function playToBank(game: GameState, playerId: number, cardId: string): MoveResult {

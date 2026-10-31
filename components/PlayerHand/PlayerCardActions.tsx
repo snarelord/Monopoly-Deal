@@ -93,7 +93,7 @@ export default function PlayerCardActions({ actions, side, onActionClick, onClos
 
       {step === "colour" && (
         <>
-          <div className="px-1 text-xs font-semibold">{active!.id === "rent" ? "Charge rent for…" : "Place as…"}</div>
+          <div className="px-1 text-xs font-semibold">{active!.id === "rent" ? "Charge rent for…" : active!.id === "add-to-set" ? "Build on…" : "Place as…"}</div>
           <div className="grid grid-cols-2 gap-1">
             {active!.colours!.map(({ colour, amount, disabled }) => (
               <button

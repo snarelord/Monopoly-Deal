@@ -8,7 +8,7 @@ const card = (id: string) => {
   return found;
 };
 const set = (colour: Colour, ...ids: string[]): PropertySet =>
-  ({ colour, cards: ids.map(card) as PropertySet["cards"], houses: 0, hotels: 0 });
+  ({ colour, cards: ids.map(card) as PropertySet["cards"], house: null, hotel: null });
 
 // two complete sets, and a green set one card short (bond street finishes it)
 const nearlyWon = () => [

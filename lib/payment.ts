@@ -1,31 +1,32 @@
 import type { Card, Player } from "./types";
 
-// everything a player could hand over: their bank and the properties in front of them, never their hand.
+// everything a player could hand over: their bank, and what's on the table (properties and buildings), never their hand.
 // cards worth nothing (the any colour wildcards) can't be used to pay
 export function payableCards(player: Player): Card[] {
-  const properties = player.properties.flatMap((set) => set.cards);
-  return [...player.bank, ...properties].filter((card) => card.value > 0);
+  return [...player.bank, ...onTable(player)].filter((card) => card.value > 0);
 }
-// TODO: houses and hotels count as payment too, once they're cards on a set rather than counts
+
+const onTable = (player: Player): Card[] =>
+  player.properties
+    .flatMap((set): (Card | null)[] => [...set.cards, set.house, set.hotel])
+    .filter((c): c is Card => c !== null);
 
 export const cardsTotal = (cards: Card[]) => cards.reduce((sum, card) => sum + card.value, 0);
 
-const isProperty = (card: Card) => card.type === "property" || card.type === "wildcard";
-
 /*
   the "pay automatically" shortcut: picks the cards to pay `amount` with.
-  properties win the game, so they're only handed over when the bank cant cover the debt:
+  properties (and the buildings on them) win the game, so they're only handed over when the bank cant cover the debt:
   - bank covers it: pay from the bank alone, overpaying as little as possible
-  - bank doesn't: hand over the whole bank, then as few properties as needed for the rest
+  - bank doesn't: hand over the whole bank, then as few cards from the table as needed for the rest
   if everything together doesn't cover it, the player pays everything they have
 */
 export function autoPay(player: Player, amount: number): string[] {
   const payable = payableCards(player);
-  const money = payable.filter((c) => !isProperty(c));
-  const properties = payable.filter(isProperty);
+  const money = payable.filter((c) => player.bank.includes(c));
+  const table = payable.filter((c) => !player.bank.includes(c));
 
   if (cardsTotal(money) >= amount) return cheapestCover(money, amount);
-  return [...money.map((c) => c.id), ...cheapestCover(properties, amount - cardsTotal(money))];
+  return [...money.map((c) => c.id), ...cheapestCover(table, amount - cardsTotal(money))];
 }
 
 // the cards whose total covers `amount` with the least overpaid, then the fewest cards.

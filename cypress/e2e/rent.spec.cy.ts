@@ -7,7 +7,7 @@ import { drawCards, takeSeat } from "../support/dealHelper";
 
 const card = (id: string) => cardData.find((c) => c.id === id)!;
 const set = (colour: Colour, ...ids: string[]): PropertySet =>
-  ({ colour, cards: ids.map(card) as PropertySet["cards"], houses: 0, hotels: 0 });
+  ({ colour, cards: ids.map(card) as PropertySet["cards"], house: null, hotel: null });
 const owner = (...properties: PropertySet[]) => ({ id: 0, hand: [], bank: [], properties });
 
 const brownRent = card("action-rent-brown-light-blue-1");

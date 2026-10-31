@@ -8,7 +8,7 @@ const card = (id: string) => cardData.find((c) => c.id === id)!;
 const debtCollector = card("action-debt-collector-1");
 const money = (...ids: string[]) => ids.map(card);
 const set = (colour: PropertySet["colour"], ...ids: string[]): PropertySet =>
-  ({ colour, cards: ids.map(card) as PropertySet["cards"], houses: 0, hotels: 0 });
+  ({ colour, cards: ids.map(card) as PropertySet["cards"], house: null, hotel: null });
 
 // player 0 has drawn and holds a debt collector, player 1 has the given bank and properties
 const setup = (bank: Card[] = [], properties: PropertySet[] = []): GameState => {

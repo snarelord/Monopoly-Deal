@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { Card as CardType, Move } from "../../lib/types";
+import type { Card as CardType, Move, Player } from "../../lib/types";
 import type { TurnStatus } from "../../lib/gameHelpers";
 import { getCardActions, toMove, type ActionChoice, type CardAction } from "@/lib/cardActions";
 import Card from "@/components/Card";
@@ -16,12 +16,12 @@ const MAX_SPACING = 110;
 const SPACING_STEP = 15;
 
 export default function PlayerHand({
-  cards,
+  me,
   turn,
   opponentIds,
   onMove,
 }: {
-  cards: CardType[];
+  me: Player;
   turn: TurnStatus;
   opponentIds: number[];
   onMove: (move: Move) => void;
@@ -30,6 +30,7 @@ export default function PlayerHand({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [spacing, setSpacing] = useState(DEFAULT_SPACING);
   const handRef = useRef<HTMLUListElement>(null);
+  const cards = me.hand;
   const middle = (cards.length - 1) / 2;
 
   useEffect(() => {
@@ -90,6 +91,8 @@ export default function PlayerHand({
                       playBlockedReason: turn.playBlockedReason,
                       canDiscard: turn.mustDiscard,
                       opponentIds,
+                      me,
+                      playsLeft: turn.playsLeft,
                     })}
                     // open towards the middle of the screen so it never runs off the edge
                     side={i > middle ? "left" : "right"}

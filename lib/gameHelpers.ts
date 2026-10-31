@@ -1,7 +1,8 @@
 import type { Card, Colour, Debt, GameState, Move, MoveResult, Player, PropertySet } from "./types";
-import { isComplete } from "./types";
+import { COLOURS, isComplete, openSetColours } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
+import { rentFor } from "./rent";
 
 export const PLAYS_PER_TURN = 3;
 export const HAND_LIMIT = 7;
@@ -90,6 +91,8 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
       return playToProperties(game, actorId, move.cardId, move.colour);
     case "discard":
       return discardCard(game, actorId, move.cardId);
+    case "rent":
+      return chargeRent(game, actorId, move.cardId, move.colour, move.targetId, move.doubleRentIds ?? []);
     case "pay":
       return fail("There's nothing to pay");
   }
@@ -115,12 +118,15 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
   if (typeof found === "string") return fail(found);
   const { card } = found;
 
+  if (card.type === "rent") return fail("Charge rent from the rent card's menu");
+  if (card.type === "action" && card.action === "double-the-rent") {
+    return fail("Double the Rent is played with a rent card");
+  }
+
   const isDebtCollector = card.type === "action" && card.action === "debt-collector";
   if (isDebtCollector) {
-    if (targetId === undefined) return fail("Choose a player to collect from");
-    if (targetId === playerId || !game.players.some((p) => p.id === targetId)) {
-      return fail("Choose another player to collect from");
-    }
+    const problem = targetProblem(game, playerId, targetId);
+    if (problem) return fail(problem);
   }
 
   const played: GameState = {
@@ -142,6 +148,65 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
     return ok(startPayment(played, card, playerId, debts));
   }
   return ok(played);
+}
+
+// why targetId isn't a player you can aim a card at, or null if it's fine
+function targetProblem(game: GameState, playerId: number, targetId: number | undefined): string | null {
+  if (targetId === undefined) return "Choose a player";
+  if (targetId === playerId || !game.players.some((p) => p.id === targetId)) return "Choose another player";
+  return null;
+}
+
+/*
+  a rent card, optionally with double the rent cards played alongside it (each one doubles it, each one is a play).
+  two colour rent charges every other player, the any colour rent card charges one chosen player
+*/
+function chargeRent(
+  game: GameState,
+  playerId: number,
+  cardId: string,
+  colour: Colour,
+  targetId: number | undefined,
+  doubleRentIds: string[],
+): MoveResult {
+  const found = findPlayable(game, playerId, cardId);
+  if (typeof found === "string") return fail(found);
+  const { player, card } = found;
+
+  if (card.type !== "rent") return fail("That isn't a rent card");
+  const colours = card.colours === "any" ? COLOURS : card.colours;
+  if (!colours.includes(colour)) return fail("This rent card can't charge for that colour");
+
+  const rent = rentFor(player, colour);
+  if (rent === 0) return fail("You don't have any properties of that colour to charge rent on");
+
+  if (new Set(doubleRentIds).size !== doubleRentIds.length) return fail("You picked the same card twice");
+  const doubles = doubleRentIds.map((id) => player.hand.find((c) => c.id === id));
+  if (doubles.some((c) => c?.type !== "action" || c.action !== "double-the-rent")) {
+    return fail("Double the Rent cards have to come from your hand");
+  }
+  if (1 + doubles.length > PLAYS_PER_TURN - game.cardsPlayed) {
+    return fail("Not enough plays left to double the rent");
+  }
+
+  let debtorIds: number[];
+  if (card.colours === "any") {
+    const problem = targetProblem(game, playerId, targetId);
+    if (problem) return fail(problem);
+    debtorIds = [targetId!];
+  } else {
+    debtorIds = game.players.filter((p) => p.id !== playerId).map((p) => p.id);
+  }
+
+  const amount = rent * 2 ** doubles.length;
+  const used = [cardId, ...doubleRentIds];
+  const played: GameState = {
+    ...game,
+    players: updatePlayer(game, playerId, (p) => ({ ...p, hand: p.hand.filter((c) => !used.includes(c.id)) })),
+    discardPile: [...game.discardPile, card, ...(doubles as Card[])],
+    cardsPlayed: game.cardsPlayed + used.length,
+  };
+  return ok(startPayment(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount, status: "paying" }))));
 }
 
 // sets up an action that other players have to pay for. anyone with nothing to pay with
@@ -248,6 +313,10 @@ function playToProperties(game: GameState, playerId: number, cardId: string, col
     if (!colour) return fail("Choose a colour for this wildcard");
     if (card.colours !== "any" && !card.colours.includes(colour)) {
       return fail("This wildcard can't be played as that colour");
+    }
+    // house rule: the any colour wildcard can't start a set, it has to join one you've already started
+    if (card.colours === "any" && !openSetColours(player.properties).includes(colour)) {
+      return fail("The any colour wildcard has to join a set you've already started");
     }
     setColour = colour;
   } else {

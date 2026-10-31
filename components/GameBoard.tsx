@@ -61,7 +61,7 @@ export default function GameBoard({
 
         <div className="order-1 col-span-2 min-w-0 self-end md:order-0 md:col-span-1">
           <PlayerHand
-            cards={me.hand}
+            me={me}
             turn={turn}
             opponentIds={opponents.map((o) => o.id)}
             onMove={onMove}

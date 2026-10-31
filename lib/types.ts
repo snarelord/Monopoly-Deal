@@ -23,7 +23,7 @@ export type ActionType =
 
 export type CardActionId =
   | "bank" | "play" | "play-on-player" | "add-to-set"
-  | "place-property" | "pay-player" | "discard";
+  | "place-property" | "pay-player" | "discard" | "rent";
 
 interface CardBase {
   id: string;
@@ -49,6 +49,10 @@ export interface PropertySet {
 
 export const isComplete = (set: PropertySet) =>
   set.cards.length >= SETS[set.colour].size;
+
+// colours with a set that's started but not finished, the any colour wildcard can only join one of these
+export const openSetColours = (sets: PropertySet[]): Colour[] =>
+  [...new Set(sets.filter((s) => !isComplete(s)).map((s) => s.colour))];
 
 export interface Player {
   id: number;
@@ -95,7 +99,9 @@ export type Move =
   | { type: "play"; cardId: string; targetId?: number } // targetId for cards aimed at one player
   | { type: "place-property"; cardId: string; colour?: Colour }
   | { type: "discard"; cardId: string }
-  | { type: "pay"; cardIds: string[] }; // bank and property cards chosen to pay a debt
+  | { type: "pay"; cardIds: string[] } // bank and property cards chosen to pay a debt
+  // targetId only for the any colour rent card, doubleRentIds are double the rent cards played with it
+  | { type: "rent"; cardId: string; colour: Colour; targetId?: number; doubleRentIds?: string[] };
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 

@@ -1,8 +1,9 @@
-import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, Player, PropertySet } from "./types";
+import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, PendingEffect, Player, PropertySet } from "./types";
 import { COLOURS, canBuild, completeColours, isComplete, openSetColours } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
 import { rentFor } from "./rent";
+import { completeSets, looseProperties, setContaining, type StealKind } from "./steal";
 
 export const PLAYS_PER_TURN = 3;
 export const SETS_TO_WIN = 3;
@@ -82,10 +83,6 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
   return ok(checkForWinner(tidySets(result.game)));
 }
 
-/*
-  keeps every player's sets tidy after a move: a set that's no longer complete (e.g. paid away a property)
-  loses its buildings to the owner's bank, a hotel without a house goes too, and empty sets are removed
-*/
 function tidySets(game: GameState): GameState {
   return {
     ...game,
@@ -124,7 +121,7 @@ function runMove(game: GameState, actorId: number, move: Move): MoveResult {
     case "bank":
       return playToBank(game, actorId, move.cardId);
     case "play":
-      return playToActionPile(game, actorId, move.cardId, move.targetId);
+      return playToActionPile(game, actorId, move);
     case "place-property":
       return playToProperties(game, actorId, move.cardId, move.colour);
     case "discard":
@@ -156,7 +153,10 @@ function updatePlayer(game: GameState, playerId: number, change: (p: Player) => 
   return game.players.map((p) => (p.id === playerId ? change(p) : p));
 }
 
-function playToActionPile(game: GameState, playerId: number, cardId: string, targetId?: number): MoveResult {
+const STEALS: string[] = ["sly-deal", "forced-deal", "deal-breaker"];
+
+function playToActionPile(game: GameState, playerId: number, move: Extract<Move, { type: "play" }>): MoveResult {
+  const { cardId, targetId, takeId, giveId } = move;
   const found = findPlayable(game, playerId, cardId);
   if (typeof found === "string") return fail(found);
   const { card } = found;
@@ -167,8 +167,10 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
   }
 
   const isDebtCollector = card.type === "action" && card.action === "debt-collector";
-  if (isDebtCollector) {
-    const problem = targetProblem(game, playerId, targetId);
+  const stealKind = card.type === "action" && STEALS.includes(card.action) ? (card.action as StealKind) : null;
+  if (isDebtCollector || stealKind) {
+    const problem = targetProblem(game, playerId, targetId)
+      ?? (stealKind && stealProblem(game, stealKind, playerId, targetId!, takeId, giveId));
     if (problem) return fail(problem);
   }
 
@@ -182,15 +184,44 @@ function playToActionPile(game: GameState, playerId: number, cardId: string, tar
   // what the card does once it's played, the rest of the actions slot in here as they're built
   if (card.type === "action" && card.action === "pass-go") return ok(drawCards(played, playerId, 2));
   if (isDebtCollector) {
-    return ok(startPayment(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT }]));
+    return ok(startAction(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT }]));
   }
   if (card.type === "action" && card.action === "birthday") {
     const owed = game.players
       .filter((p) => p.id !== playerId)
       .map((p) => ({ playerId: p.id, amount: BIRTHDAY_AMOUNT }));
-    return ok(startPayment(played, card, playerId, owed));
+    return ok(startAction(played, card, playerId, owed));
+  }
+  if (stealKind) {
+    const effect: PendingEffect = stealKind === "forced-deal"
+      ? { kind: stealKind, takeId: takeId!, giveId: giveId! }
+      : { kind: stealKind, takeId: takeId! };
+    return ok(startAction(played, card, playerId, [{ playerId: targetId!, amount: 0 }], effect));
   }
   return ok(played);
+}
+
+// why the chosen cards can't be taken, or null if they can (see steal.ts for what's allowed)
+function stealProblem(
+  game: GameState,
+  kind: StealKind,
+  playerId: number,
+  targetId: number,
+  takeId: string | undefined,
+  giveId: string | undefined,
+): string | null {
+  const theirs = game.players.find((p) => p.id === targetId)!.properties;
+  const mine = game.players.find((p) => p.id === playerId)!.properties;
+  const has = (cards: Card[], id: string | undefined) => cards.some((c) => c.id === id);
+
+  if (kind === "deal-breaker") {
+    return has(completeSets(theirs).flatMap((s) => s.cards), takeId) ? null : "Choose one of their complete sets";
+  }
+  if (!has(looseProperties(theirs), takeId)) return "Choose one of their properties that isn't in a complete set";
+  if (kind === "forced-deal" && !has(looseProperties(mine), giveId)) {
+    return "Choose one of your properties that isn't in a complete set to swap";
+  }
+  return null;
 }
 
 // why targetId isn't a player you can aim a card at, or null if it's fine
@@ -245,27 +276,92 @@ function chargeRent(
     discardPile: [...game.discardPile, card, ...(doubles as Card[])],
     cardsPlayed: game.cardsPlayed + used.length,
   };
-  return ok(startPayment(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount }))));
+  return ok(startAction(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount }))));
 }
 
-/*
-  sets up an action that other players have to pay for. each debt starts as:
-  - done, if the debtor has nothing to pay with (the rules forgive what you can't cover, and nobody gets stuck)
-  - responding, if they're holding a just say no, so they get the chance to play it
-  - paying, otherwise (no point asking someone who can't say no)
-*/
-function startPayment(
+function startAction(
   game: GameState,
   card: Card,
   fromPlayerId: number,
   owed: { playerId: number; amount: number }[],
+  effect: PendingEffect = { kind: "pay" },
 ): GameState {
-  const debts = owed.map(({ playerId, amount }): Debt => {
-    const debtor = game.players.find((p) => p.id === playerId)!;
-    const status = payableCards(debtor).length === 0 ? "done" : holdsSayNo(debtor) ? "responding" : "paying";
-    return { playerId, amount, status, sayNoCount: 0 };
-  });
-  return withDebts(game, { card, fromPlayerId, debts });
+  let next = game;
+  const debts: Debt[] = [];
+  for (const { playerId, amount } of owed) {
+    const debt: Debt = { playerId, amount, status: "responding", sayNoCount: 0 };
+    const target = next.players.find((p) => p.id === playerId)!;
+    if (effect.kind === "pay" && payableCards(target).length === 0) {
+      debts.push({ ...debt, status: "done" });
+    } else if (holdsSayNo(target)) {
+      debts.push(debt);
+    } else {
+      const ahead = goAhead(next, effect, fromPlayerId, debt);
+      next = ahead.game;
+      debts.push({ ...debt, status: ahead.status });
+    }
+  }
+  return withDebts(next, { card, fromPlayerId, effect, debts });
+}
+
+// an action going ahead against one target: a payment waits for them to pick cards, a steal happens straight away
+function goAhead(
+  game: GameState,
+  effect: PendingEffect,
+  fromPlayerId: number,
+  debt: Debt,
+): { game: GameState; status: Debt["status"] } {
+  if (effect.kind === "pay") {
+    const debtor = game.players.find((p) => p.id === debt.playerId)!;
+    return { game, status: payableCards(debtor).length === 0 ? "done" : "paying" };
+  }
+  return { game: steal(game, effect, fromPlayerId, debt.playerId), status: "done" };
+}
+
+// moves the cards for a steal. single cards keep the colour they were being used as,
+// a deal breaker'd set moves over whole (buildings too) and stays its own set
+function steal(
+  game: GameState,
+  effect: Exclude<PendingEffect, { kind: "pay" }>,
+  thiefId: number,
+  targetId: number,
+): GameState {
+  const thief = game.players.find((p) => p.id === thiefId)!;
+  const target = game.players.find((p) => p.id === targetId)!;
+  let thiefSets: PropertySet[];
+  let targetSets: PropertySet[];
+
+  if (effect.kind === "deal-breaker") {
+    const set = setContaining(target.properties, effect.takeId)!;
+    thiefSets = [...thief.properties, set];
+    targetSets = target.properties.filter((s) => s !== set);
+  } else {
+    const taken = removeProperty(target.properties, effect.takeId);
+    thiefSets = addToSet(thief.properties, taken.card, taken.colour);
+    targetSets = taken.sets;
+    if (effect.kind === "forced-deal") {
+      const given = removeProperty(thiefSets, effect.giveId);
+      thiefSets = given.sets;
+      targetSets = addToSet(targetSets, given.card, given.colour);
+    }
+  }
+
+  return {
+    ...game,
+    players: game.players.map((p) =>
+      p.id === thiefId ? { ...p, properties: thiefSets } : p.id === targetId ? { ...p, properties: targetSets } : p,
+    ),
+  };
+}
+
+// takes one property out of a player's sets (an emptied set is cleared up by tidySets)
+function removeProperty(sets: PropertySet[], cardId: string) {
+  const set = setContaining(sets, cardId)!;
+  return {
+    card: set.cards.find((c) => c.id === cardId)!,
+    colour: set.colour,
+    sets: sets.map((s) => (s === set ? { ...s, cards: s.cards.filter((c) => c.id !== cardId) } : s)),
+  };
 }
 
 // stores the pending action's debts, and clears it once every one is done so the turn carries on
@@ -276,13 +372,6 @@ function withDebts(game: GameState, pending: PendingAction): GameState {
 const isSayNo = (card: Card) => card.type === "action" && card.action === "just-say-no";
 const holdsSayNo = (player: Player) => player.hand.some(isSayNo);
 
-/*
-  answering a pending action, back and forth on one debt:
-  the debtor plays just say no (or accepts and pays), then the player who played the action can say no
-  back (or let it go), then the debtor again... each side only gets asked if they're holding a just say no.
-  an odd number of just say nos cancels the debt, an even number means it's paid after all.
-  each debt is separate, so on a birthday one player saying no doesn't let anyone else off
-*/
 function respond(
   game: GameState,
   actorId: number,
@@ -301,8 +390,12 @@ function respond(
       debts: pending.debts.map((d) => (d === debt ? { ...d, status, sayNoCount } : d)),
     }));
 
-  // the debtor accepts and pays, or the player who played the action lets the just say no stand
-  if (move.type === "accept") return isAttacker ? update(game, "done") : update(game, payingOrLetOff(game, debt));
+  // the debtor accepts and it goes ahead, or the player who played the action lets the just say no stand
+  if (move.type === "accept") {
+    if (isAttacker) return update(game, "done");
+    const ahead = goAhead(game, pending.effect, pending.fromPlayerId, debt);
+    return update(ahead.game, ahead.status);
+  }
 
   const actor = game.players.find((p) => p.id === actorId)!;
   const card = actor.hand.find((c) => c.id === move.cardId);
@@ -321,19 +414,16 @@ function respond(
   const sayNoCount = debt.sayNoCount + 1;
 
   if (isAttacker) {
-    // said no back: the debtor owes again, unless they have another just say no to answer with
+    // said no back: it's back on, unless the debtor has another just say no to answer with
     const debtor = next.players.find((p) => p.id === debt.playerId)!;
-    return update(next, holdsSayNo(debtor) ? "responding" : payingOrLetOff(next, debt), sayNoCount);
+    if (holdsSayNo(debtor)) return update(next, "responding", sayNoCount);
+    const ahead = goAhead(next, pending.effect, pending.fromPlayerId, debt);
+    return update(ahead.game, ahead.status, sayNoCount);
   }
 
   const attacker = next.players.find((p) => p.id === pending.fromPlayerId)!;
   const canCounter = holdsSayNo(attacker) && next.cardsPlayed < PLAYS_PER_TURN;
   return update(next, canCounter ? "countering" : "done", sayNoCount);
-}
-
-function payingOrLetOff(game: GameState, debt: Debt): Debt["status"] {
-  const debtor = game.players.find((p) => p.id === debt.playerId)!;
-  return payableCards(debtor).length === 0 ? "done" : "paying";
 }
 
 function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResult {
@@ -502,6 +592,7 @@ export function getTurnStatus(game: GameState) {
     winnerId: game.winnerId, // null until someone has SETS_TO_WIN complete sets of different colours
     // the card behind the pending action, and each debt still being dealt with (empty when nothing is pending)
     pendingCard: game.pending?.card ?? null,
+    pendingEffect: game.pending?.effect ?? null,
     owing: (game.pending?.debts ?? [])
       .filter((d) => d.status !== "done")
       .map((d) => ({

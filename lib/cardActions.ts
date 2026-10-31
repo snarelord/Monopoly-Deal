@@ -1,6 +1,7 @@
-import type { ActionType, Card, CardActionId, Colour, Move, Player } from "./types";
+import type { ActionType, Card, CardActionId, Colour, Move, OpponentView, Player } from "./types";
 import { buildableColours, openSetColours } from "./types";
 import { rentOptions } from "./rent";
+import { canSteal, type StealKind } from "./steal";
 
 // a colour the player can pick, with the rent it would charge for rent cards
 export interface ColourOption {
@@ -9,18 +10,15 @@ export interface ColourOption {
   disabled?: boolean;
 }
 
-/*
-  an option in a card's menu. some need choices first, asked in this order:
-  colour (wildcards, rent), then player (debt collector, any colour rent), then double the rent
-*/
 export interface CardAction {
   id: CardActionId;
   label: string;
   disabled?: boolean;
-  reason?: string; // shown as a tooltip when disabled
+  reason?: string;
   colours?: ColourOption[];
   targets?: number[];
-  doubleRentIds?: string[]; // double the rent cards that could go with it, offered as "no / double / double twice"
+  doubleRentIds?: string[];
+  pick?: StealKind;
 }
 
 // what the player picked in the menu on top of the action itself
@@ -28,25 +26,30 @@ export interface ActionChoice {
   colour?: Colour;
   targetId?: number;
   doubleRentIds?: string[];
+  takeId?: string;
+  giveId?: string;
 }
 
-// later this grows, whose turn, phase...
 export interface ActionContext {
   playBlockedReason: string | null;
   canDiscard: boolean;
-  opponentIds: number[];
+  opponents: OpponentView[];
   me: Player;
   playsLeft: number;
 }
 
-const TARGETED: ActionType[] = ["debt-collector", "sly-deal", "forced-deal", "deal-breaker"];
+const STEAL_OPTIONS: Record<StealKind, { label: string; reason: string }> = {
+  "sly-deal": { label: "Take a property…", reason: "Nobody has a property you can take (not in a complete set)" },
+  "forced-deal": { label: "Swap a property…", reason: "You both need a property that isn't in a complete set" },
+  "deal-breaker": { label: "Take a complete set…", reason: "Nobody has a complete set" },
+};
 
 function playOption(action: ActionType, opponentIds: number[]): CardAction | null {
-  if (TARGETED.includes(action)) return { id: "play-on-player", label: "Play against a player", targets: opponentIds };
+  if (action === "debt-collector") return { id: "play-on-player", label: "Play against a player", targets: opponentIds };
   if (action === "pass-go") return { id: "play", label: "Play (draw 2)" };
   if (action === "birthday") return { id: "play", label: "Play (everyone pays 2M)" };
-  if (action === "just-say-no") return null; // only played in response, so bank or discard
-  if (action === "double-the-rent") return null; // chosen from a rent card's menu instead
+  if (action === "just-say-no") return null;
+  if (action === "double-the-rent") return null;
   return { id: "play", label: "Play" };
 }
 
@@ -94,7 +97,7 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
         id: "rent",
         label: card.colours === "any" ? "Charge one player rent…" : "Charge everyone rent…",
         colours: options,
-        targets: card.colours === "any" ? ctx.opponentIds : undefined,
+        targets: card.colours === "any" ? ctx.opponents.map((o) => o.id) : undefined,
         doubleRentIds,
       };
       // blocked outright when there's nothing to charge for
@@ -116,7 +119,16 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
           : "You need a complete set with a house on it";
         return [bank, colours.length ? play(buildOn) : { ...buildOn, disabled: true, reason }, discard];
       }
-      const option = playOption(card.action, ctx.opponentIds);
+      if (card.action in STEAL_OPTIONS) {
+        // only offer players who have something to take
+        const kind = card.action as StealKind;
+        const targets = ctx.opponents
+          .filter((o) => canSteal(kind, o.properties, ctx.me.properties))
+          .map((o) => o.id);
+        const steal: CardAction = { id: "play-on-player", label: STEAL_OPTIONS[kind].label, targets, pick: kind };
+        return [bank, targets.length ? play(steal) : { ...steal, disabled: true, reason: STEAL_OPTIONS[kind].reason }, discard];
+      }
+      const option = playOption(card.action, ctx.opponents.map((o) => o.id));
       return [bank, ...(option ? [play(option)] : []), discard];
     }
   }
@@ -143,11 +155,7 @@ export function toMove(card: Card, actionId: CardActionId, choice: ActionChoice 
         doubleRentIds: choice.doubleRentIds,
       };
     case "play-on-player":
-      // only debt collector so far, sly deal, forced deal and deal breaker come later
-      if (card.type === "action" && card.action === "debt-collector") {
-        return { type: "play", cardId, targetId: choice.targetId };
-      }
-      return null;
+      return { type: "play", cardId, targetId: choice.targetId, takeId: choice.takeId, giveId: choice.giveId };
     default:
       return null;
   }

@@ -81,7 +81,7 @@ export default function GameBoard({
           <PlayerHand
             me={me}
             turn={turn}
-            opponentIds={opponents.map((o) => o.id)}
+            opponents={opponents}
             onMove={onMove}
           />
         </div>
@@ -94,11 +94,16 @@ export default function GameBoard({
       </div>
 
       {myDebt && (
-        // keyed by player so each payer starts with a fresh selection (several players can owe in turn)
         <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />
       )}
       {!myDebt && myResponse && turn.pendingCard && (
-        <ResponsePanel me={me} pendingCard={turn.pendingCard} debt={myResponse} onMove={onMove} />
+        <ResponsePanel
+          me={me}
+          pendingCard={turn.pendingCard}
+          effect={turn.pendingEffect!}
+          debt={myResponse}
+          onMove={onMove}
+        />
       )}
     </div>
   );

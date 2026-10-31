@@ -28,7 +28,7 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
           {debt.status === "countering"
             ? `Player ${debt.playerId + 1} said no, Player ${debt.toPlayerId + 1} can say no back`
             : debt.status === "responding"
-              ? `Player ${debt.playerId + 1} can Just Say No to ${debt.amount}M`
+              ? `Player ${debt.playerId + 1} can Just Say No to the ${turn.pendingCard?.name}`
               : `Player ${debt.playerId + 1} owes Player ${debt.toPlayerId + 1} ${debt.amount}M`}
         </div>
       ))}

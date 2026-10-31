@@ -23,7 +23,7 @@ export type ActionType =
 
 export type CardActionId =
   | "bank" | "play" | "play-on-player" | "add-to-set"
-  | "place-property" | "pay-player" | "discard";
+  | "place-property" | "pay-player" | "discard" | "rent";
 
 interface CardBase {
   id: string;
@@ -50,6 +50,10 @@ export interface PropertySet {
 export const isComplete = (set: PropertySet) =>
   set.cards.length >= SETS[set.colour].size;
 
+// colours with a set that's started but not finished, the any colour wildcard can only join one of these
+export const openSetColours = (sets: PropertySet[]): Colour[] =>
+  [...new Set(sets.filter((s) => !isComplete(s)).map((s) => s.colour))];
+
 export interface Player {
   id: number;
   hand: Card[];
@@ -57,11 +61,26 @@ export interface Player {
   properties: PropertySet[];
 }
 
-export interface ActionInProgress {
-  type: string;
-  sourcePlayer: number;
-  targetPlayer?: number;
+/*
+  one player's share of a pending action, e.g. 5M owed from a debt collector.
+  status is whose move it is on this debt:
+  - responding: the debtor can play a just say no, or accept
+  - countering: the debtor said no, the player who played the action can say no back, or let it go
+  - paying: the debtor is picking cards to pay with
+  - done: paid, let off, or cancelled (an odd sayNoCount means it was cancelled)
+*/
+export interface Debt {
+  playerId: number;
+  amount: number;
+  status: "responding" | "countering" | "paying" | "done";
+  sayNoCount: number; // just say nos played on this debt so far
+}
+
+// an action that's waiting on other players before the turn can carry on
+export interface PendingAction {
   card: Card;
+  fromPlayerId: number; // who gets paid
+  debts: Debt[];
 }
 
 export interface GameState {
@@ -71,8 +90,24 @@ export interface GameState {
   cardsPlayed: number;
   isGameOver: boolean;
   winner: Player | null;
-  actionInProgress: ActionInProgress | null;
+  pending: PendingAction | null; // while set, the game waits on the players who still owe
   hasDrawnCards: boolean;
+  /*
+    PLANNED: replace this unused field with a game log, `log: LogEntry[]`, one entry per successful move.
+    structured, not strings, so the UI can render it however it likes and it's what gets broadcast online:
+      type LogEntry = { turn: number; playerId: number } & (
+        | { kind: "drew"; count: number }        // a count only, drawn cards are private
+        | { kind: "banked"; card: Card }
+        | { kind: "placed"; card: Card; colour: Colour }
+        | { kind: "played"; card: Card; targetIds: number[]; amount?: number }
+        | { kind: "said-no"; againstId: number }
+        | { kind: "paid"; toId: number; cards: Card[] }
+        | { kind: "cancelled"; card: Card; forId: number }
+        | { kind: "ended-turn" }
+      );
+    it must never hold hidden information (cards in hands, the deck order).
+    read by the log feed and toasts (GameBoard) and the hot-seat catch up (PassScreen)
+  */
   message?: string;
   discardPile: Card[], // played actions and discards, reshuffled into the deck when it runs out
   seed: number; // drives every shuffle, so a seeded game replays exactly
@@ -85,9 +120,16 @@ export type Move =
   | { type: "draw" }
   | { type: "end-turn" }
   | { type: "bank"; cardId: string }
-  | { type: "play"; cardId: string }
+  | { type: "play"; cardId: string; targetId?: number } // targetId for cards aimed at one player
   | { type: "place-property"; cardId: string; colour?: Colour }
-  | { type: "discard"; cardId: string };
+  | { type: "discard"; cardId: string }
+  | { type: "pay"; cardIds: string[] } // bank and property cards chosen to pay a debt
+  // targetId only for the any colour rent card, doubleRentIds are double the rent cards played with it
+  | { type: "rent"; cardId: string; colour: Colour; targetId?: number; doubleRentIds?: string[] }
+  // answering a pending action. debtorId says which debt, the player who played the action needs it
+  // when several players have said no to them (birthday, two colour rent)
+  | { type: "just-say-no"; cardId: string; debtorId?: number }
+  | { type: "accept"; debtorId?: number };
 
 export type MoveResult = { ok: true; game: GameState } | { ok: false; error: string };
 

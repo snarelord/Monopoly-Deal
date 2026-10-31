@@ -47,10 +47,18 @@ describe("Wildcards", () => {
     expect(game.players[0].properties[0].cards.map((c) => c.id)).to.deep.equal([p.id, w.id]);
   });
 
-  it("lets the any-colour wildcard be any colour", () => {
+  it("lets the any-colour wildcard join a set of any colour", () => {
+    const p = property("darkBlue");
     const w = wild("any");
-    const after = play(holding(w), { type: "place-property", cardId: w.id, colour: "darkBlue" });
-    expect(after.players[0].properties[0].colour).to.equal("darkBlue");
+    let game = play(holding(p, w), { type: "place-property", cardId: p.id });
+    game = play(game, { type: "place-property", cardId: w.id, colour: "darkBlue" });
+    expect(game.players[0].properties[0].cards.map((c) => c.id)).to.deep.equal([p.id, w.id]);
+  });
+
+  it("won't let the any-colour wildcard start a set on its own", () => {
+    const w = wild("any");
+    const result = attempt(holding(w), { type: "place-property", cardId: w.id, colour: "darkBlue" });
+    expect(result.ok).to.equal(false);
   });
 
   it("refuses a colour the wildcard doesn't have", () => {

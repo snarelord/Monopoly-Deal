@@ -16,3 +16,7 @@ export function drawCards() {
     cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", before + 2);
   });
 }
+// hot-seat: when the game moves to another player, a pass screen covers the board until they click through
+export function takeSeat() {
+  cy.get('[data-cy="pass-continue"]').click();
+}

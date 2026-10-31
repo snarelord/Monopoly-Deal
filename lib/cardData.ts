@@ -581,7 +581,7 @@ export const cardData: Card[] = [
   },
   // double the rent cards
   {
-    id: "double the rent-1",
+    id: "double-the-rent-1",
     type: "action",
     name: "Double the Rent",
     value: 1,
@@ -589,7 +589,7 @@ export const cardData: Card[] = [
     image: "/cards/double-rent.png",
   },
   {
-    id: "double the rent-2",
+    id: "double-the-rent-2",
     type: "action",
     name: "Double the Rent",
     value: 1,

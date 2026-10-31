@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* one source of truth for card size: shrinks with the window, never above 6rem */
+  --card-w: clamp(3.5rem, min(7.5vw, 13dvh), 8rem);
 }
 
 @theme inline {
@@ -66,7 +68,7 @@ body {
   transform:
     translateX(-50%)
     rotate(var(--rot))
-    translateY(-3rem)
+    translateY(calc(var(--card-w) * -0.5))   /* was -3rem */
     scale(1.08);
   z-index: 100;
   filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));

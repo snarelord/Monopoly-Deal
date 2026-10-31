@@ -1,8 +1,11 @@
 "use client";
 
-import type { Card, Player, OpponentView } from "@/lib/types";
+import type { Card, Player, OpponentView, CardActionId } from "@/lib/types";
 import PlayerHand from "./PlayerHand/PlayerHand";
 import DrawPile from "./DrawPile/DrawPile";
+import ActionPile from "./ActionPile/ActionPile";
+import PlayerBank from "./PlayerHand/PlayerBank";
+import PropertyPile from "./PropertyPile/PropertyPile";
 
 export interface GameBoardProps {
   me: Player;
@@ -12,6 +15,8 @@ export interface GameBoardProps {
   currentPlayerId: number;
   onDraw: () => void;
   hasDrawnCards: boolean;
+  actionPile: Card[];
+  onCardAction: (cardId: string, actionId: CardActionId) => void;
 }
 
 export default function GameBoard({
@@ -19,21 +24,38 @@ export default function GameBoard({
   drawPileCount,
   onDraw,
   hasDrawnCards,
+  actionPile,
+  onCardAction,
 }: GameBoardProps) {
   return (
-    <div data-cy="game-board" className="relative h-dvh overflow-hidden">
-      <div className="absolute left-[60%] top-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-10">
-        <DrawPile
-          count={drawPileCount}
-          onDraw={onDraw}
-          disabled={hasDrawnCards}
-        />
-
+    <div
+      data-cy="game-board"
+      className="grid h-dvh grid-rows-[minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
+    >
+      <div className="grid place-items-center">
+        <div className="flex gap-[calc(var(--card-w)*0.4)]">
+          <DrawPile
+            count={drawPileCount}
+            onDraw={onDraw}
+            disabled={hasDrawnCards}
+          />
+          <ActionPile cards={actionPile} />
+        </div>
         {/* discard pile goes next to it */}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0">
-        <PlayerHand cards={me.hand} />
+      <div className="grid grid-cols-[minmax(7rem,calc(var(--card-w)*2.5+3rem))_minmax(0,1fr)_minmax(7rem,calc(var(--card-w)*2.5+3rem))] items-stretch gap-4">
+        <div className="self-end">
+          <PlayerBank playerId={me.id} cards={me.bank} />
+        </div>
+
+        <PlayerHand cards={me.hand} onCardAction={onCardAction} />
+
+        <div className="relative">
+          <div className="absolute inset-0">
+            <PropertyPile playerId={me.id} sets={me.properties} />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -61,8 +61,19 @@ body {
   filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));
 }
 
+.hand-slot:hover,
+.hand-slot.is-selected {
+  transform:
+    translateX(-50%)
+    rotate(var(--rot))
+    translateY(-3rem)
+    scale(1.08);
+  z-index: 100;
+  filter: drop-shadow(0 8px 8px rgb(0 0 0 / 20%));
+}
+
 /* Card button */
-.hand-slot button {
+.hand-slot > .card-button {
   display: block;
   background: none;
   border: none;

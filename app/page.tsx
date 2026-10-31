@@ -64,7 +64,7 @@ export default function Home() {
         paused={me.id !== seatedId}
       />
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
-      {me.id !== seatedId && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
+      {me.id !== seatedId && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
     </main>
   );
 }

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import type { Card as CardType, OpponentView } from "@/lib/types";
-import { SETS, isComplete, isFlipped } from "@/lib/types";
-import { COLOUR_STYLES, colourName } from "@/components/colourStyles";
-import Card from "@/components/Card";
+import { isComplete } from "@/lib/types";
 import CardPreview from "@/components/PlayerHand/CardPreview";
+import MiniSet from "@/components/MiniSet";
 
 // PLANNED: clicking the bank total or a set opens the full view (see the notes in PlayerBank and PropertyPile)
 export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: OpponentView; isTheirTurn: boolean }) {
@@ -37,42 +36,18 @@ export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: Opp
         <div className="grid flex-1 place-items-center text-xs text-black/50">No properties yet</div>
       ) : (
         <ul className="flex flex-1 flex-wrap content-start gap-2 overflow-y-auto p-2 [--mini:calc(var(--card-w)*0.55)]">
-          {opponent.properties.map((set) => {
-            const cards = ([...set.cards, set.house, set.hotel] as (CardType | null)[]).filter(
-              (c): c is CardType => c !== null,
-            );
-            return (
-              <li
-                key={set.cards[0].id}
-                data-cy="opponent-set"
-                data-colour={set.colour}
-                data-count={set.cards.length}
-                data-complete={isComplete(set)}
-                className="w-(--mini)"
-              >
-                <div
-                  title={colourName(set.colour)}
-                  className={`mb-0.5 rounded px-1 text-[0.6rem] font-semibold leading-4 ${COLOUR_STYLES[set.colour]}`}
-                >
-                  {set.cards.length}/{SETS[set.colour].size}
-                  {isComplete(set) && " ✓"}
-                </div>
-                {cards.map((card) => (
-                  <button
-                    key={card.id}
-                    type="button"
-                    className="relative block h-[calc(var(--mini)*0.29)] w-full cursor-default p-0 last:h-auto hover:z-10"
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      setPreview({ card, flipped: isFlipped(card, set.colour) });
-                    }}
-                  >
-                    <Card card={card} className={`rounded-sm ${isFlipped(card, set.colour) ? "rotate-180" : ""}`} />
-                  </button>
-                ))}
-              </li>
-            );
-          })}
+          {opponent.properties.map((set) => (
+            <li
+              key={set.cards[0].id}
+              data-cy="opponent-set"
+              data-colour={set.colour}
+              data-count={set.cards.length}
+              data-complete={isComplete(set)}
+              className="w-(--mini)"
+            >
+              <MiniSet set={set} onPreview={(card, flipped) => setPreview({ card, flipped })} />
+            </li>
+          ))}
         </ul>
       )}
 

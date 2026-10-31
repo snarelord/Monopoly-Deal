@@ -4,7 +4,7 @@ export default function CardBack() {
       data-cy="card-back"
       src="/cards/cardBack.png"
       alt="Monopoly Deal card back"
-      className="aspect-5/7 w-full rounded-lg object-cover shadow-md"
+      className="aspect-(--card-ratio) w-full rounded-lg object-cover shadow-md"
     />
   );
 }

@@ -10,11 +10,11 @@ export default function ActionPile({ cards }: { cards: CardType[] }) {
       data-count={cards.length}
       className="flex flex-col items-center gap-3"
     >
-      <div className="w-24">
+      <div className="w-(--card-w)">
         {top ? (
           <Card card={top} className="rounded-lg shadow-md" />
         ) : (
-          <div className="aspect-5/7 rounded-lg border-2 border-dashed border-black/30" />
+          <div className="aspect-(--card-ratio) rounded-lg border-2 border-dashed border-black/30" />
         )}
       </div>
       <span className="text-sm font-semibold text-black">

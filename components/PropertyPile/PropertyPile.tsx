@@ -37,7 +37,7 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
               data-complete={isComplete(set)}
               className="[--peek:calc(var(--card-w)*0.29)]"
             >
-              <header className={`mb-1 flex w-24 justify-between rounded px-1.5 py-0.5 text-xs font-semibold ${COLOUR_STYLES[set.colour]}`}>
+              <header className={`mb-1 flex w-(--card-w) justify-between rounded px-1.5 py-0.5 text-xs font-semibold ${COLOUR_STYLES[set.colour]}`}>
                 <span className="capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
                 <span className="shrink-0">
                   {set.cards.length}/{SETS[set.colour].size}

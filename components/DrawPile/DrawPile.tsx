@@ -29,9 +29,9 @@ export default function DrawPile({ count, onDraw, canDraw }: DrawPileProps) {
       disabled={cannotDraw}
       className="flex flex-col items-center gap-3 cursor-pointer"
     >
-      <div className="w-24">
+      <div className="w-(--card-w)">
         {count === 0 ? (
-          <div className="aspect-5/7 rounded-lg border-2 border-dashed border-black/30" />
+          <div className="aspect-(--card-ratio) rounded-lg border-2 border-dashed border-black/30" />
         ) : (
           <div
             className="rounded-lg"

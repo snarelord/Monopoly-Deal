@@ -32,7 +32,7 @@ export default function CardPreview({ card, onClose }: CardPreviewProps) {
         aria-modal="true"
         aria-label={`Card preview: ${card.name}`}
       >
-        <Card card={card} className="w-80" />
+        <Card card={card} />
       </div>
     </div>
   );

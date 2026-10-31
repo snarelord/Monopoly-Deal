@@ -1,4 +1,4 @@
-import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, PendingEffect, Player, PropertySet } from "./types";
+import type { Card, Colour, Debt, GameState, LogEntry, LogEvent, Move, MoveResult, PendingAction, PendingEffect, Player, PropertySet } from "./types";
 import { COLOURS, canBuild, completeColours, isComplete, openSetColours, wildcardMoves } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
@@ -53,13 +53,19 @@ export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 *
     turnNumber: 1,
     mustDiscard: false,
     seed,
+    log: [],
   };
 }
+
+const logged = (game: GameState, ...events: LogEvent[]): GameState => ({
+  ...game,
+  log: [...game.log, ...events.map((e) => ({ ...e, turn: game.turnNumber }) as LogEntry)],
+});
 
 function checkForWinner(game: GameState): GameState {
   const winner = game.players.find((p) => completeColours(p).length >= SETS_TO_WIN);
   if (!winner) return game;
-  return { ...game, isGameOver: true, winnerId: winner.id, pending: null };
+  return logged({ ...game, isGameOver: true, winnerId: winner.id, pending: null }, { kind: "won", playerId: winner.id });
 }
 
 const ok = (game: GameState): MoveResult => ({ ok: true, game });
@@ -183,24 +189,28 @@ function playToActionPile(game: GameState, playerId: number, move: Extract<Move,
     cardsPlayed: game.cardsPlayed + 1,
   };
 
+  const playedOn = (targetIds: number[], amount?: number) =>
+    logged(played, { kind: "played", playerId, card, targetIds, amount });
+
   // what the card does once it's played, the rest of the actions slot in here as they're built
-  if (card.type === "action" && card.action === "pass-go") return ok(drawCards(played, playerId, 2));
+  if (card.type === "action" && card.action === "pass-go") return ok(drawCards(playedOn([]), playerId, 2));
   if (isDebtCollector) {
-    return ok(startAction(played, card, playerId, [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT }]));
+    const owed = [{ playerId: targetId!, amount: DEBT_COLLECTOR_AMOUNT }];
+    return ok(startAction(playedOn([targetId!], DEBT_COLLECTOR_AMOUNT), card, playerId, owed));
   }
   if (card.type === "action" && card.action === "birthday") {
     const owed = game.players
       .filter((p) => p.id !== playerId)
       .map((p) => ({ playerId: p.id, amount: BIRTHDAY_AMOUNT }));
-    return ok(startAction(played, card, playerId, owed));
+    return ok(startAction(playedOn(owed.map((o) => o.playerId), BIRTHDAY_AMOUNT), card, playerId, owed));
   }
   if (stealKind) {
     const effect: PendingEffect = stealKind === "forced-deal"
       ? { kind: stealKind, takeId: takeId!, giveId: giveId! }
       : { kind: stealKind, takeId: takeId! };
-    return ok(startAction(played, card, playerId, [{ playerId: targetId!, amount: 0 }], effect));
+    return ok(startAction(playedOn([targetId!]), card, playerId, [{ playerId: targetId!, amount: 0 }], effect));
   }
-  return ok(played);
+  return ok(playedOn([]));
 }
 
 // why the chosen cards can't be taken, or null if they can (see steal.ts for what's allowed)
@@ -278,7 +288,10 @@ function chargeRent(
     discardPile: [...game.discardPile, card, ...(doubles as Card[])],
     cardsPlayed: game.cardsPlayed + used.length,
   };
-  return ok(startAction(played, card, playerId, debtorIds.map((id) => ({ playerId: id, amount }))));
+  const charged = logged(played, {
+    kind: "played", playerId, card, targetIds: debtorIds, amount, colour, doubled: doubles.length,
+  });
+  return ok(startAction(charged, card, playerId, debtorIds.map((id) => ({ playerId: id, amount }))));
 }
 
 function startAction(
@@ -294,6 +307,7 @@ function startAction(
     const debt: Debt = { playerId, amount, status: "responding", sayNoCount: 0 };
     const target = next.players.find((p) => p.id === playerId)!;
     if (effect.kind === "pay" && payableCards(target).length === 0) {
+      next = logged(next, { kind: "paid", playerId, toId: fromPlayerId, cards: [] });
       debts.push({ ...debt, status: "done" });
     } else if (holdsSayNo(target)) {
       debts.push(debt);
@@ -315,7 +329,8 @@ function goAhead(
 ): { game: GameState; status: Debt["status"] } {
   if (effect.kind === "pay") {
     const debtor = game.players.find((p) => p.id === debt.playerId)!;
-    return { game, status: payableCards(debtor).length === 0 ? "done" : "paying" };
+    if (payableCards(debtor).length > 0) return { game, status: "paying" };
+    return { game: logged(game, { kind: "paid", playerId: debt.playerId, toId: fromPlayerId, cards: [] }), status: "done" };
   }
   return { game: steal(game, effect, fromPlayerId, debt.playerId), status: "done" };
 }
@@ -332,28 +347,32 @@ function steal(
   const target = game.players.find((p) => p.id === targetId)!;
   let thiefSets: PropertySet[];
   let targetSets: PropertySet[];
+  let event: LogEvent;
 
   if (effect.kind === "deal-breaker") {
     const set = setContaining(target.properties, effect.takeId)!;
     thiefSets = [...thief.properties, set];
     targetSets = target.properties.filter((s) => s !== set);
+    event = { kind: "took-set", playerId: thiefId, fromId: targetId, colour: set.colour, cards: set.cards };
   } else {
     const taken = removeProperty(target.properties, effect.takeId);
     thiefSets = addToSet(thief.properties, taken.card, taken.colour);
     targetSets = taken.sets;
+    event = { kind: "took", playerId: thiefId, fromId: targetId, card: taken.card };
     if (effect.kind === "forced-deal") {
       const given = removeProperty(thiefSets, effect.giveId);
       thiefSets = given.sets;
       targetSets = addToSet(targetSets, given.card, given.colour);
+      event = { kind: "swapped", playerId: thiefId, withId: targetId, took: taken.card, gave: given.card };
     }
   }
 
-  return {
+  return logged({
     ...game,
     players: game.players.map((p) =>
       p.id === thiefId ? { ...p, properties: thiefSets } : p.id === targetId ? { ...p, properties: targetSets } : p,
     ),
-  };
+  }, event);
 }
 
 // takes one property out of a player's sets (an emptied set is cleared up by tidySets)
@@ -392,9 +411,11 @@ function respond(
       debts: pending.debts.map((d) => (d === debt ? { ...d, status, sayNoCount } : d)),
     }));
 
+  const cancelled: LogEvent = { kind: "cancelled", playerId: pending.fromPlayerId, card: pending.card, forId: debt.playerId };
+
   // the debtor accepts and it goes ahead, or the player who played the action lets the just say no stand
   if (move.type === "accept") {
-    if (isAttacker) return update(game, "done");
+    if (isAttacker) return update(logged(game, cancelled), "done");
     const ahead = goAhead(game, pending.effect, pending.fromPlayerId, debt);
     return update(ahead.game, ahead.status);
   }
@@ -407,12 +428,12 @@ function respond(
   const isOwnTurn = actorId === game.players[game.currentPlayerIndex].id;
   if (isOwnTurn && game.cardsPlayed >= PLAYS_PER_TURN) return fail("No plays left to play Just Say No");
 
-  const next: GameState = {
+  const next = logged({
     ...game,
     players: updatePlayer(game, actorId, (p) => ({ ...p, hand: withoutCard(p.hand, card.id) })),
     discardPile: [...game.discardPile, card],
     cardsPlayed: game.cardsPlayed + (isOwnTurn ? 1 : 0),
-  };
+  }, { kind: "said-no", playerId: actorId, againstId: isAttacker ? debt.playerId : pending.fromPlayerId });
   const sayNoCount = debt.sayNoCount + 1;
 
   if (isAttacker) {
@@ -425,7 +446,8 @@ function respond(
 
   const attacker = next.players.find((p) => p.id === pending.fromPlayerId)!;
   const canCounter = holdsSayNo(attacker) && next.cardsPlayed < PLAYS_PER_TURN;
-  return update(next, canCounter ? "countering" : "done", sayNoCount);
+  if (canCounter) return update(next, "countering", sayNoCount);
+  return update(logged(next, cancelled), "done", sayNoCount);
 }
 
 function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResult {
@@ -479,7 +501,8 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
   });
 
   const debts = pending.debts.map((d) => (d === debt ? { ...d, status: "done" as const } : d));
-  return ok(withDebts({ ...game, players }, { ...pending, debts }));
+  const paid = logged({ ...game, players }, { kind: "paid", playerId, toId: pending.fromPlayerId, cards: paying as Card[] });
+  return ok(withDebts(paid, { ...pending, debts }));
 }
 
 // puts a property into the first unfinished set of that colour, or starts a new set
@@ -507,7 +530,7 @@ function build(game: GameState, playerId: number, cardId: string, colour: Colour
       : "A hotel needs a complete set with a house and no hotel");
   }
 
-  return ok({
+  return ok(logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({
       ...p,
@@ -515,7 +538,7 @@ function build(game: GameState, playerId: number, cardId: string, colour: Colour
       properties: p.properties.map((s, i) => (i === target ? { ...s, [building]: card } : s)),
     })),
     cardsPlayed: game.cardsPlayed + 1,
-  });
+  }, { kind: "built", playerId, card, colour }));
 }
 
 // rearranging doesn't use a play. a set it breaks loses its buildings in tidySets
@@ -524,10 +547,10 @@ function moveWildcard(game: GameState, playerId: number, cardId: string, colour:
   if (!wildcardMoves(player.properties, cardId).includes(colour)) return fail("That wildcard can't move there");
 
   const moved = removeProperty(player.properties, cardId);
-  return ok({
+  return ok(logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({ ...p, properties: addToSet(moved.sets, moved.card, colour) })),
-  });
+  }, { kind: "moved", playerId, card: moved.card, colour }));
 }
 
 function playToBank(game: GameState, playerId: number, cardId: string): MoveResult {
@@ -538,7 +561,7 @@ function playToBank(game: GameState, playerId: number, cardId: string): MoveResu
   // property and wild property cards can never be banked (the menu hides it, this enforces it)
   if (card.type === "property" || card.type === "wildcard") return fail("Properties can't be banked");
 
-  return ok({
+  return ok(logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({
       ...p,
@@ -546,7 +569,7 @@ function playToBank(game: GameState, playerId: number, cardId: string): MoveResu
       bank: [...p.bank, card],
     })),
     cardsPlayed: game.cardsPlayed + 1,
-  });
+  }, { kind: "banked", playerId, card }));
 }
 
 function playToProperties(game: GameState, playerId: number, cardId: string, colour?: Colour): MoveResult {
@@ -571,7 +594,7 @@ function playToProperties(game: GameState, playerId: number, cardId: string, col
     return fail("Only property cards go in your property pile");
   }
 
-  return ok({
+  return ok(logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({
       ...p,
@@ -579,7 +602,7 @@ function playToProperties(game: GameState, playerId: number, cardId: string, col
       properties: addToSet(player.properties, card, setColour),
     })),
     cardsPlayed: game.cardsPlayed + 1,
-  });
+  }, { kind: "placed", playerId, card, colour: setColour }));
 }
 
 export function getTurnStatus(game: GameState) {
@@ -623,7 +646,7 @@ export type TurnStatus = ReturnType<typeof getTurnStatus>;
 
 function advanceTurn(game: GameState): GameState {
   return {
-    ...game,
+    ...logged(game, { kind: "ended-turn", playerId: game.players[game.currentPlayerIndex].id }),
     currentPlayerIndex: (game.currentPlayerIndex + 1 ) % game.players.length,
     turnNumber: game.turnNumber + 1,
     cardsPlayed: 0,
@@ -656,12 +679,12 @@ function drawCards(game: GameState, playerId: number, count: number): GameState 
   }
   const drawn = deck.slice(0, count);
 
-  return {
+  return logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({ ...p, hand: [...p.hand, ...drawn] })),
     deck: deck.slice(drawn.length),
     discardPile,
-  };
+  }, { kind: "drew", playerId, count: drawn.length });
 }
 
 function endTurn(game: GameState): MoveResult {
@@ -681,11 +704,11 @@ function discardCard(game: GameState, playerId: number, cardId: string): MoveRes
   const card = player.hand.find((c) => c.id === cardId);
   if (!card) return fail("That card isn't in your hand");
 
-  const next: GameState = {
+  const next = logged({
     ...game,
     players: updatePlayer(game, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, cardId) })),
     discardPile: [...game.discardPile, card],
-  };
+  }, { kind: "discarded", playerId, card });
 
   return ok(player.hand.length - 1 <= HAND_LIMIT ? advanceTurn(next) : next);
 }

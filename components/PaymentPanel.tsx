@@ -41,7 +41,7 @@ export default function PaymentPanel({ me, amount, toPlayerId, onMove }: Payment
                   aria-pressed={isSelected}
                   onClick={() => toggle(card.id)}
                   className={`block w-[calc(var(--card-w)*0.8)] cursor-pointer rounded-md transition-transform ${
-                    isSelected ? "-translate-y-1 outline-3 outline-green-600" : "opacity-80 hover:opacity-100"
+                    isSelected ? "outline-3 outline-green-600" : "opacity-80 hover:opacity-100"
                   }`}
                 >
                   <Card card={card} className="rounded-md" />

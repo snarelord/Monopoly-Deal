@@ -46,6 +46,7 @@ export default function Home() {
   return (
     <main className="relative">
       <GameBoard
+        key={game.seed} // a new game starts with a fresh board (toasts already seen, etc)
         me={me}
         opponents={opponents}
         drawPileCount={game.deck.length}
@@ -59,6 +60,8 @@ export default function Home() {
           setMoveError(null);
           setSeatedId(0);
         }}
+        log={game.log}
+        paused={me.id !== seatedId}
       />
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
       {me.id !== seatedId && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}

@@ -179,5 +179,6 @@ describe("Debt Collector in the game", () => {
     takeSeat();
     cy.get('[data-cy="payment-panel"]').should("not.exist");
     cy.get('[data-cy="bank-0"]').should("have.attr", "data-count", "1");
+    cy.get('[data-cy="toast"]').should("contain.text", "Player 2 paid you");
   });
 });

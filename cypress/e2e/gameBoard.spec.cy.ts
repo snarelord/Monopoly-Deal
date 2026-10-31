@@ -5,7 +5,7 @@ const cardNames = cardData.map((c) => c.name);
 const idsOf = ($cards: JQuery<HTMLElement>) => $cards.toArray().map((el) => el.getAttribute("data-card-id"));
 
 describe("Game board", () => {
-  beforeEach(() => cy.visit("/"));
+  beforeEach(() => cy.visit("/?players=2"));
 
   it("deals me five cards", () => {
     cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", 5);

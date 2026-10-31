@@ -3,7 +3,7 @@ import { cardData } from "../../lib/cardData";
 const byId = Object.fromEntries(cardData.map((c) => [c.id, c]));
 
 describe("Card actions", () => {
-  beforeEach(() => cy.visit("/"));
+  beforeEach(() => cy.visit("/?players=2"));
 
   it("shows no menu until a card is selected", () => {
     cy.get('[data-cy="card-actions"]').should("not.exist");

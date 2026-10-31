@@ -1,5 +1,5 @@
 import type { ActionType, Card, CardActionId, Colour, Move, Player } from "./types";
-import { openSetColours } from "./types";
+import { buildableColours, openSetColours } from "./types";
 import { rentOptions } from "./rent";
 
 // a colour the player can pick, with the rent it would charge for rent cards
@@ -45,7 +45,6 @@ function playOption(action: ActionType, opponentIds: number[]): CardAction | nul
   if (TARGETED.includes(action)) return { id: "play-on-player", label: "Play against a player", targets: opponentIds };
   if (action === "pass-go") return { id: "play", label: "Play (draw 2)" };
   if (action === "birthday") return { id: "play", label: "Play (everyone pays 2M)" };
-  if (action === "house" || action === "hotel") return { id: "add-to-set", label: "Add to a set" };
   if (action === "just-say-no") return null; // only played in response, so bank or discard
   if (action === "double-the-rent") return null; // chosen from a rent card's menu instead
   return { id: "play", label: "Play" };
@@ -105,6 +104,18 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
       return [bank, rentAction, discard];
     }
     case "action": {
+      if (card.action === "house" || card.action === "hotel") {
+        const colours = buildableColours(ctx.me.properties, card.action);
+        const buildOn: CardAction = {
+          id: "add-to-set",
+          label: "Build on a set…",
+          colours: colours.map((colour) => ({ colour })),
+        };
+        const reason = card.action === "house"
+          ? "You need a complete set to build on (not railroads or utilities)"
+          : "You need a complete set with a house on it";
+        return [bank, colours.length ? play(buildOn) : { ...buildOn, disabled: true, reason }, discard];
+      }
       const option = playOption(card.action, ctx.opponentIds);
       return [bank, ...(option ? [play(option)] : []), discard];
     }
@@ -121,6 +132,8 @@ export function toMove(card: Card, actionId: CardActionId, choice: ActionChoice 
       return { type: actionId, cardId };
     case "place-property":
       return { type: "place-property", cardId, colour: choice.colour };
+    case "add-to-set":
+      return { type: "build", cardId, colour: choice.colour! };
     case "rent":
       return {
         type: "rent",

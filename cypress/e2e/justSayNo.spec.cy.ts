@@ -12,8 +12,8 @@ const [no1, no2, no3] = ["action-just-say-no-1", "action-just-say-no-2", "action
 const browns: PropertySet = {
   colour: "brown",
   cards: [card("property-old-kent-road"), card("property-whitechapel-road")] as PropertySet["cards"],
-  houses: 0,
-  hotels: 0,
+  house: null,
+  hotel: null,
 };
 
 //   player 0 has drawn, holds `attacker` cards and owns a full brown set.

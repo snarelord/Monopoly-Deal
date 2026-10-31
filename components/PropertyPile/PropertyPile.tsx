@@ -55,11 +55,13 @@ export default function PropertyPile({ playerId, sets }: PropertyPileProps) {
                 </span>
               </header>
 
+              {/* buildings sit on top of the set's cards, like laying them on the set in the real game */}
               <ul className="w-(--card-w)">
-                {set.cards.map((card) => (
+                {([...set.cards, set.house, set.hotel] as (CardType | null)[]).filter((c): c is CardType => c !== null).map((card) => (
                   <li
                     key={card.id}
                     data-flipped={isFlipped(card, set.colour)}
+                    data-building={card.type === "action" ? card.action : undefined}
                     className="relative h-(--peek) transition-[filter] last:h-auto hover:z-10 hover:drop-shadow-lg"
                   >
                     <button

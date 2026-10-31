@@ -12,7 +12,7 @@ export function setRent(set: PropertySet): number {
   if (set.cards.every(isAnyColourWild)) return 0;
   const { size, rent } = SETS[set.colour];
   const count = Math.min(set.cards.length, size);
-  return rent[count - 1] + set.houses * HOUSE_RENT + set.hotels * HOTEL_RENT;
+  return rent[count - 1] + (set.house ? HOUSE_RENT : 0) + (set.hotel ? HOTEL_RENT : 0);
 }
 
 // what a player can charge for a colour. with two sets of the same colour, the higher rent is charged

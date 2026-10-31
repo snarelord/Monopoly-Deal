@@ -54,27 +54,12 @@ export default function Home() {
         turn={turn}
         moveError={moveError}
         onMove={dispatch}
+        onNewGame={() => {
+          setGame(beginGame());
+          setMoveError(null);
+          setSeatedId(0);
+        }}
       />
-      <div className="fixed left-4 top-4 z-50  inline-flex rounded-base shadow-xs -space-x-px" role="group">
-        <button
-          className="cursor-pointer border-2 text-black p-2"
-          onClick={() => {
-            setGame(beginGame());
-            setMoveError(null);
-            setSeatedId(0);
-          }}
-        >
-          Deal again
-        </button>
-        <button
-          data-cy="end-turn"
-          className="cursor-pointer border-2 text-black p-2"
-          disabled={!turn.canEndTurn}
-          onClick={() => dispatch({ type: "end-turn" })}
-        >
-          End turn
-        </button>
-      </div>
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
       {me.id !== seatedId && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
     </main>

@@ -1,5 +1,5 @@
 import type { Card, Colour, Debt, GameState, Move, MoveResult, PendingAction, PendingEffect, Player, PropertySet } from "./types";
-import { COLOURS, canBuild, completeColours, isComplete, openSetColours } from "./types";
+import { COLOURS, canBuild, completeColours, isComplete, openSetColours, wildcardMoves } from "./types";
 import { cardData } from "./cardData";
 import { cardsTotal, payableCards } from "./payment";
 import { rentFor } from "./rent";
@@ -130,6 +130,8 @@ function runMove(game: GameState, actorId: number, move: Move): MoveResult {
       return chargeRent(game, actorId, move.cardId, move.colour, move.targetId, move.doubleRentIds ?? []);
     case "build":
       return build(game, actorId, move.cardId, move.colour);
+    case "move-wildcard":
+      return moveWildcard(game, actorId, move.cardId, move.colour);
     case "pay":
       return fail("There's nothing to pay");
     case "just-say-no":
@@ -513,6 +515,18 @@ function build(game: GameState, playerId: number, cardId: string, colour: Colour
       properties: p.properties.map((s, i) => (i === target ? { ...s, [building]: card } : s)),
     })),
     cardsPlayed: game.cardsPlayed + 1,
+  });
+}
+
+// rearranging doesn't use a play. a set it breaks loses its buildings in tidySets
+function moveWildcard(game: GameState, playerId: number, cardId: string, colour: Colour): MoveResult {
+  const player = game.players.find((p) => p.id === playerId)!;
+  if (!wildcardMoves(player.properties, cardId).includes(colour)) return fail("That wildcard can't move there");
+
+  const moved = removeProperty(player.properties, cardId);
+  return ok({
+    ...game,
+    players: updatePlayer(game, playerId, (p) => ({ ...p, properties: addToSet(moved.sets, moved.card, colour) })),
   });
 }
 

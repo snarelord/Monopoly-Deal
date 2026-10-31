@@ -10,12 +10,10 @@ import PropertyPile from "./PropertyPile/PropertyPile";
 import TurnInfo from "./TurnInfo";
 import PaymentPanel from "./PaymentPanel";
 import ResponsePanel from "./ResponsePanel";
+import OpponentPanel from "./OpponentPanel";
 
 /*
-  PLANNED: seeing what everyone else is doing (banks and property piles are face up in the real game)
-  - opponent panels in a strip across the top, one per opponent, built from the `opponents` prop
-    (already passed in, not drawn yet): hand size as a count, bank total, each property set as a small
-    colour chip with progress ("green 2/3", ✓ when complete)
+  PLANNED:
   - clicking an opponent's bank or properties opens the full view (see the PLANNED notes in PlayerBank and PropertyPile)
   - a game log feed in the empty space left of the draw/discard piles, reading GameState.log (see types.ts),
     collapsing to just the latest entry on mobile
@@ -31,6 +29,7 @@ export interface GameBoardProps {
   onMove: (move: Move) => void;
   turn: TurnStatus,
   moveError: string | null;
+  onNewGame: () => void;
 }
 
 export default function GameBoard({
@@ -41,6 +40,7 @@ export default function GameBoard({
   onMove,
   turn,
   moveError,
+  onNewGame,
 }: GameBoardProps) {
   // a debt I'm paying, or one where it's my move to just say no (as the debtor) or say no back (as the one owed)
   const myDebt = turn.owing.find((debt) => debt.playerId === me.id && debt.status === "paying");
@@ -53,13 +53,26 @@ export default function GameBoard({
   return (
     <div
       data-cy="game-board"
-      className="grid h-dvh grid-rows-[minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
+      className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
     >
-      <div className="absolute right-4 top-4">
-        <TurnInfo turn={turn} moveError={moveError} />
+      <div className="flex h-[clamp(8rem,22dvh,13rem)] justify-center gap-4 overflow-x-auto">
+        {opponents.map((opponent) => (
+          <div key={opponent.id} className="h-full min-w-56 max-w-xl flex-1">
+            <OpponentPanel opponent={opponent} isTheirTurn={opponent.id === turn.currentPlayerId} />
+          </div>
+        ))}
       </div>
-      <div className="grid place-items-center">
-        <div className="flex gap-[calc(var(--card-w)*0.4)]">
+
+      <div className="relative grid min-h-0 place-items-center">
+        <button
+          type="button"
+          data-cy="new-game"
+          onClick={onNewGame}
+          className="absolute left-0 top-0 cursor-pointer rounded border-2 border-black/40 px-2 py-1 text-xs text-black"
+        >
+          Deal again
+        </button>
+        <div className="flex items-center gap-[calc(var(--card-w)*0.4)]">
           <DrawPile
             count={drawPileCount}
             canDraw={turn.canDraw}
@@ -67,11 +80,23 @@ export default function GameBoard({
           />
           {/* played actions and discards share one pile, instead of having seperate piles*/}
           <ActionPile cards={discardPile} />
+          <div className="flex w-52 flex-col gap-2">
+            <TurnInfo turn={turn} moveError={moveError} />
+            <button
+              type="button"
+              data-cy="end-turn"
+              disabled={!turn.canEndTurn}
+              onClick={() => onMove({ type: "end-turn" })}
+              className="cursor-pointer rounded bg-green-700 px-3 py-1.5 text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              End turn
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(12rem,1fr)_minmax(0,1.4fr)_minmax(12rem,1fr)]">
-        <div className="relative order-2 min-h-[clamp(13rem,36dvh,26rem)] md:order-0">
+        <div className="relative order-2 min-h-[clamp(11rem,30dvh,24rem)] md:order-0">
           <div className="absolute inset-0">
             <PlayerBank playerId={me.id} cards={me.bank} />
           </div>
@@ -86,9 +111,17 @@ export default function GameBoard({
           />
         </div>
 
-        <div className="relative order-3 min-h-[clamp(13rem,36dvh,26rem)] md:order-0">
+        <div className="relative order-3 min-h-[clamp(11rem,30dvh,24rem)] md:order-0">
           <div className="absolute inset-0">
-            <PropertyPile playerId={me.id} sets={me.properties} />
+            <PropertyPile
+              playerId={me.id}
+              sets={me.properties}
+              onMoveWildcard={
+                me.id === turn.currentPlayerId && !turn.pendingCard && turn.winnerId === null
+                  ? (cardId, colour) => onMove({ type: "move-wildcard", cardId, colour })
+                  : undefined
+              }
+            />
           </div>
         </div>
       </div>

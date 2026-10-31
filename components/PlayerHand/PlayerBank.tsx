@@ -7,7 +7,7 @@ import CardPreview from "./CardPreview";
   PLANNED: viewing another player's bank
   - clicking an opponent's bank total in their panel (see GameBoard) opens this component for them, read only:
     no menus, but right click to preview still works
-  - needs a prop to say whose bank it is (the heading becomes "Player 2's bank") and to turn the menus off
+  - needs a prop to say whose bank it is (the heading becomes "Sam's bank", from their name) and to turn the menus off
   - when paying gets built into the board rather than the PaymentPanel modal, the same cards could become selectable here
 */
 interface PlayerBankProps {

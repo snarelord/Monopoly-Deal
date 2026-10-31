@@ -34,16 +34,21 @@ export function shuffleDeck(cards: Card[], random: () => number = Math.random): 
   return deck;
 }
 
-export function beginGame(playerCount = 2, seed = Math.floor(Math.random() * 2 ** 32)): GameState {
+export const MAX_NAME_LENGTH = 20; // matches the check on room_players.display_name
+export const defaultName = (id: number) => `Player ${id + 1}`;
+export const defaultNames = (count: number) => Array.from({ length: count }, (_, i) => defaultName(i));
+
+export function beginGame(players: number | string[] = 2, seed = Math.floor(Math.random() * 2 ** 32)): GameState {
+  const names = typeof players === "number" ? defaultNames(players) : players;
   const deck = shuffleDeck(cardData, mulberry32(seed));
-  const players = Array.from({ length: playerCount }, (_, i) => ({
-    id: i,
-    hand: deck.splice(0, 5), // removes 5 from the deck and returns them
-    bank: [],
-    properties: [],
-  }));
   return {
-    players,
+    players: names.map((name, i) => ({
+      id: i,
+      name,
+      hand: deck.splice(0, 5), // removes 5 from the deck and returns them
+      bank: [],
+      properties: [],
+    })),
     deck,
     discardPile: [],
     currentPlayerIndex: 0,

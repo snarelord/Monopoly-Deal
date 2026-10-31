@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { applyMove, beginGame, getTurnStatus, MAX_PLAYERS, MIN_PLAYERS, waitingOn } from "@/lib/gameHelpers";
+import { applyMove, beginGame, defaultNames, getTurnStatus, MAX_PLAYERS, MIN_PLAYERS, waitingOn } from "@/lib/gameHelpers";
 import GameBoard from "@/components/GameBoard";
 import GameSetup from "@/components/GameSetup";
 import PassScreen from "@/components/PassScreen";
@@ -13,7 +13,7 @@ function startFrom(search: string) {
   const players = params.get("players");
   const count = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, Number(players ?? MIN_PLAYERS)));
   return {
-    count,
+    names: defaultNames(count),
     game: seed || players ? beginGame(count, seed ? Number(seed) : undefined) : null,
     passScreens: params.get("hotseat") !== "open", // ?hotseat=open skips the pass screens
   };
@@ -34,21 +34,21 @@ function HotSeatGame({ search }: { search: string }) {
   // HOT-SEAT ONLY: the player who last confirmed they're at the screen (see PassScreen)
   const [seatedId, setSeatedId] = useState(0);
   const [settingUp, setSettingUp] = useState(start.game === null);
-  const [playerCount, setPlayerCount] = useState(start.count);
+  const [names, setNames] = useState(start.names);
   // HOT-SEAT ONLY: whether to hide hands behind a pass screen when the device changes hands
   const [passScreens, setPassScreens] = useState(start.passScreens);
 
-  function deal(count: number, withPassScreens: boolean) {
-    setPlayerCount(count);
+  function deal(playerNames: string[], withPassScreens: boolean) {
+    setNames(playerNames);
     setPassScreens(withPassScreens);
-    setGame(beginGame(count));
+    setGame(beginGame(playerNames));
     setMoveError(null);
     setSeatedId(0);
     setSettingUp(false);
   }
 
   if (settingUp) {
-    return <GameSetup initialCount={playerCount} initialPassScreens={passScreens} onDeal={deal} />;
+    return <GameSetup initialNames={names} initialPassScreens={passScreens} onDeal={deal} />;
   }
   if (!game) return null;
 
@@ -72,6 +72,7 @@ function HotSeatGame({ search }: { search: string }) {
 
   const opponents: OpponentView[] = others.map((p) => ({
     id: p.id,
+    name: p.name,
     handCount: p.hand.length,
     bank: p.bank,
     properties: p.properties,
@@ -94,7 +95,7 @@ function HotSeatGame({ search }: { search: string }) {
         paused={waitingForSeat}
       />
       {/* HOT-SEAT ONLY: the game has moved on to another player, hand the device over first */}
-      {waitingForSeat && !game.isGameOver && <PassScreen playerId={me.id} onReady={() => setSeatedId(me.id)} />}
+      {waitingForSeat && !game.isGameOver && <PassScreen name={me.name} onReady={() => setSeatedId(me.id)} />}
     </main>
   );
 }

@@ -47,17 +47,19 @@ export default function GameBoard({
   log,
   paused,
 }: GameBoardProps) {
-  const playerCount = opponents.length + 1;
+  const [seen, setSeen] = useState<Record<number, number>>({}); // per player: how much of the log their toasts covered
+  const [showGameOver, setShowGameOver] = useState(true);
+  const everyone = [{ id: me.id, name: me.name, properties: me.properties, bank: me.bank }, ...opponents].toSorted(
+    (a, b) => a.id - b.id,
+  );
+  const names = everyone.map((p) => p.name); // names[id], since ids are seat numbers
 
   // toasts: entries aimed at whoever's at the screen since they last saw any (tracked per player for hot-seat)
-  const [seen, setSeen] = useState<Record<number, number>>({});
   const toasts = log
     .map((entry, index) => ({ entry, index }))
     .slice(seen[me.id] ?? 0)
     .filter(({ entry }) => isAimedAt(entry, me.id))
-    .map(({ entry, index }) => ({ index, text: describeEntry(entry, me.id, playerCount) }));
-  const [showGameOver, setShowGameOver] = useState(true);
-  const everyone = [{ id: me.id, properties: me.properties, bank: me.bank }, ...opponents].sort((a, b) => a.id - b.id);
+    .map(({ entry, index }) => ({ index, text: describeEntry(entry, me.id, names) }));
 
   const dismissToasts = useCallback(() => setSeen((s) => ({ ...s, [me.id]: log.length })), [me.id, log.length]);
 
@@ -92,7 +94,7 @@ export default function GameBoard({
           Deal again
         </button>
         <div className="absolute bottom-0 left-0 top-9 hidden w-56 lg:flex">
-          <GameLog log={log} viewerId={me.id} playerCount={playerCount} />
+          <GameLog log={log} viewerId={me.id} names={names} />
         </div>
         <div className="flex items-center gap-[calc(var(--card-w)*0.4)]">
           <DrawPile
@@ -103,7 +105,7 @@ export default function GameBoard({
           {/* played actions and discards share one pile, instead of having seperate piles*/}
           <ActionPile cards={discardPile} />
           <div className="flex w-52 flex-col gap-2">
-            <TurnInfo turn={turn} moveError={moveError} />
+            <TurnInfo turn={turn} names={names} moveError={moveError} />
             <button
               type="button"
               data-cy="end-turn"
@@ -117,7 +119,7 @@ export default function GameBoard({
         </div>
         {log.length > 0 && (
           <p data-cy="latest-log" className="max-w-full truncate text-xs text-black/70 lg:hidden">
-            {describeEntry(log[log.length - 1], me.id, playerCount)}
+            {describeEntry(log[log.length - 1], me.id, names)}
           </p>
         )}
       </div>
@@ -134,6 +136,7 @@ export default function GameBoard({
             me={me}
             turn={turn}
             opponents={opponents}
+            names={names}
             onMove={onMove}
           />
         </div>
@@ -165,7 +168,7 @@ export default function GameBoard({
       )}
 
       {myDebt && (
-        <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toPlayerId={myDebt.toPlayerId} onMove={onMove} />
+        <PaymentPanel key={me.id} me={me} amount={myDebt.amount} toName={names[myDebt.toPlayerId]} onMove={onMove} />
       )}
       {!myDebt && myResponse && turn.pendingCard && (
         <ResponsePanel
@@ -173,6 +176,7 @@ export default function GameBoard({
           pendingCard={turn.pendingCard}
           effect={turn.pendingEffect!}
           debt={myResponse}
+          names={names}
           onMove={onMove}
         />
       )}

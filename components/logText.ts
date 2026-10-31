@@ -4,10 +4,12 @@ import { colourName } from "./colourStyles";
 const title = (colour: Colour) => colourName(colour).replace(/\b\w/g, (c) => c.toUpperCase());
 const cap = (text: string) => text[0].toUpperCase() + text.slice(1);
 
-// one log entry as a sentence, from the viewer's point of view ("you" rather than their player number)
-export function describeEntry(entry: LogEntry, viewerId: number, playerCount: number): string {
-  const name = (id: number) => (id === viewerId ? "you" : `Player ${id + 1}`);
-  const possessive = (id: number) => (id === viewerId ? "your" : `Player ${id + 1}'s`);
+// one log entry as a sentence, from the viewer's point of view ("you" rather than their name).
+// names is indexed by player id
+export function describeEntry(entry: LogEntry, viewerId: number, names: string[]): string {
+  const playerCount = names.length;
+  const name = (id: number) => (id === viewerId ? "you" : names[id]);
+  const possessive = (id: number) => (id === viewerId ? "your" : `${names[id]}'s`);
   const who = cap(name(entry.playerId));
 
   switch (entry.kind) {

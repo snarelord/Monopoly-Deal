@@ -83,6 +83,7 @@ export const completeColours = (player: Player): Colour[] =>
 
 export interface Player {
   id: number;
+  name: string;
   hand: Card[];
   bank: Card[];
   properties: PropertySet[];
@@ -186,6 +187,7 @@ export type LogEntry = LogEvent & { turn: number };
 
 export interface OpponentView {
   id: number;
+  name: string;
   handCount: number;
   bank: Card[];
   properties: PropertySet[];

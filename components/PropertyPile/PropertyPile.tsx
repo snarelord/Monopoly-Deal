@@ -9,7 +9,7 @@ import CardPreview from "../PlayerHand/CardPreview";
   PLANNED: viewing another player's property pile
   - clicking an opponent's property chips in their panel (see GameBoard) opens this component for them, read only,
     with right click preview (and flipped wildcards) working the same
-  - needs a prop to say whose pile it is (the heading becomes "Player 2's properties")
+  - needs a prop to say whose pile it is (the heading becomes "Sam's properties", from their name)
   - later this becomes the picker for Sly Deal / Forced Deal (pick one card, not from a complete set)
     and Deal Breaker (pick a whole complete set), so a "pick" mode that highlights what's allowed
 */

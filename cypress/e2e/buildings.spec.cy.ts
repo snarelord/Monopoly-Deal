@@ -70,7 +70,7 @@ describe("Building", () => {
   });
 
   it("adds 3M rent for a house and 4M for a hotel", () => {
-    const owner = (properties: PropertySet[]) => ({ id: 0, hand: [], bank: [], properties });
+    const owner = (properties: PropertySet[]) => ({ id: 0, name: "Player 1", hand: [], bank: [], properties });
     expect(rentFor(owner([darkBlue()]), "darkBlue")).to.equal(8);
     expect(rentFor(owner([darkBlue({ house })]), "darkBlue")).to.equal(11);
     expect(rentFor(owner([darkBlue({ house, hotel })]), "darkBlue")).to.equal(15);
@@ -105,7 +105,7 @@ describe("Buildings and paying", () => {
   });
 
   it("pays automatically with buildings like properties, only once the bank runs out", () => {
-    const player = { id: 1, hand: [], bank: [card("money-1m-1")], properties: [darkBlue({ house })] };
+    const player = { id: 1, name: "Player 2", hand: [], bank: [card("money-1m-1")], properties: [darkBlue({ house })] };
     // owes 3M: the 1M, then the cheapest card on the table that covers the other 2M is the 3M house
     expect(autoPay(player, 3).sort()).to.deep.equal(["house-1", "money-1m-1"]);
     expect(autoPay(player, 1)).to.deep.equal(["money-1m-1"]);

@@ -65,7 +65,7 @@ export default function StealPicker({ kind, target, me, onConfirm, onCancel }: S
         <div className="flex flex-col gap-3 overflow-y-auto p-2">
           {kind === "deal-breaker" ? (
             <section>
-              <div className="mb-1 text-xs font-semibold">Player {target.id + 1}&apos;s complete sets</div>
+              <div className="mb-1 text-xs font-semibold">{target.name}&apos;s complete sets</div>
               <ul className="flex flex-col gap-2">
                 {completeSets(target.properties).map((set) => {
                   const id = set.cards[0].id;
@@ -101,7 +101,7 @@ export default function StealPicker({ kind, target, me, onConfirm, onCancel }: S
             <>
               <section>
                 <div className="mb-1 text-xs font-semibold">
-                  Take from Player {target.id + 1} (not from a complete set)
+                  Take from {target.name} (not from a complete set)
                 </div>
                 <ul className="flex flex-wrap gap-2">
                   {looseProperties(target.properties).map((card) =>

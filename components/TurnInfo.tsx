@@ -1,6 +1,6 @@
 import { PLAYS_PER_TURN, type TurnStatus } from "../lib/gameHelpers";
 
-export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveError: string | null }) {
+export default function TurnInfo({ turn, names, moveError }: { turn: TurnStatus; names: string[]; moveError: string | null }) {
   return (
     <div
       data-cy="turn-info"
@@ -10,12 +10,12 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
       data-plays-left={turn.playsLeft}
       className="rounded-lg border border-black/20 bg-white/70 px-3 py-2 text-sm text-black"
     >
-      <div className="font-semibold">Player {turn.currentPlayerId + 1}&apos;s turn</div>
+      <div className="truncate font-semibold">{names[turn.currentPlayerId]}&apos;s turn</div>
       <div>Round {turn.round} · Turn {turn.turnNumber}</div>
       <div>Plays left: {turn.playsLeft}/{PLAYS_PER_TURN}</div>
       {turn.winnerId !== null && (
         <div data-cy="winner" className="mt-1 font-semibold text-green-700">
-          Player {turn.winnerId + 1} wins!
+          {names[turn.winnerId]} wins!
         </div>
       )}
       {turn.mustDiscard && (
@@ -26,10 +26,10 @@ export default function TurnInfo({ turn, moveError }: { turn: TurnStatus; moveEr
       {turn.owing.map((debt) => (
         <div key={debt.playerId} data-cy="owing" data-status={debt.status} className="mt-1 font-semibold text-amber-700">
           {debt.status === "countering"
-            ? `Player ${debt.playerId + 1} said no, Player ${debt.toPlayerId + 1} can say no back`
+            ? `${names[debt.playerId]} said no, ${names[debt.toPlayerId]} can say no back`
             : debt.status === "responding"
-              ? `Player ${debt.playerId + 1} can Just Say No to the ${turn.pendingCard?.name}`
-              : `Player ${debt.playerId + 1} owes Player ${debt.toPlayerId + 1} ${debt.amount}M`}
+              ? `${names[debt.playerId]} can Just Say No to the ${turn.pendingCard?.name}`
+              : `${names[debt.playerId]} owes ${names[debt.toPlayerId]} ${debt.amount}M`}
         </div>
       ))}
       {moveError && (

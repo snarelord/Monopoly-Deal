@@ -19,11 +19,13 @@ export default function PlayerHand({
   me,
   turn,
   opponents,
+  names,
   onMove,
 }: {
   me: Player;
   turn: TurnStatus;
   opponents: OpponentView[];
+  names: string[];
   onMove: (move: Move) => void;
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
@@ -98,6 +100,7 @@ export default function PlayerHand({
                       me,
                       playsLeft: turn.playsLeft,
                     })}
+                    names={names}
                     side={i > middle ? "left" : "right"}
                     onActionClick={(action, choice) => handleAction(card, action, choice)}
                     onClose={() => setSelectedId(null)}

@@ -40,14 +40,13 @@ export default function GameBoard({
   log,
   paused,
 }: GameBoardProps) {
-  const [seen, setSeen] = useState<Record<number, number>>({}); // per player: how much of the log their toasts covered
+  const [seen, setSeen] = useState<Record<number, number>>(() => ({ [me.id]: log.length }));
   const [showGameOver, setShowGameOver] = useState(true);
   const everyone = [{ id: me.id, name: me.name, properties: me.properties, bank: me.bank }, ...opponents].toSorted(
     (a, b) => a.id - b.id,
   );
   const names = everyone.map((p) => p.name); // names[id], since ids are seat numbers
 
-  // toasts: entries aimed at whoever's at the screen since they last saw any (tracked per player for hot-seat)
   const toasts = log
     .map((entry, index) => ({ entry, index }))
     .slice(seen[me.id] ?? 0)
@@ -56,7 +55,6 @@ export default function GameBoard({
 
   const dismissToasts = useCallback(() => setSeen((s) => ({ ...s, [me.id]: log.length })), [me.id, log.length]);
 
-  // a debt I'm paying, or one where it's my move to just say no (as the debtor) or say no back (as the one owed)
   const myDebt = turn.owing.find((debt) => debt.playerId === me.id && debt.status === "paying");
   const myResponse = turn.owing.find(
     (debt) =>
@@ -97,7 +95,6 @@ export default function GameBoard({
             canDraw={turn.canDraw}
             onDraw={() => onMove({ type: "draw" })}
           />
-          {/* played actions and discards share one pile, instead of having seperate piles*/}
           <ActionPile cards={discardPile} />
           <div className="flex w-52 flex-col gap-2">
             <TurnInfo turn={turn} names={names} moveError={moveError} />

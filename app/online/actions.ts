@@ -154,7 +154,7 @@ export async function makeMove(rawCode: string, move: Move): Promise<{ error: st
   const code = tidyCode(rawCode);
 
   const seat = (await getLobby(code))?.players.find((player) => player.user_id === userId)?.seat;
-  if (seat === undefined || null) return { error: "You're not in this game."};
+  if (seat === undefined) return { error: "You're not in this game."};
 
   const db = createAdminSupabase();
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -169,7 +169,7 @@ export async function makeMove(rawCode: string, move: Move): Promise<{ error: st
       updated_at: new Date().toISOString(),
     }).eq("room_code", code).eq("version", game.version).select("version");
 
-    if (error) return { error: "Couldn't save your move. Try again." }
+    if (error) return { error: "Couldn't save your move. Try again." };
     if (saved.length > 0) {
       after(() => announceRoomChange(code));
       return null;

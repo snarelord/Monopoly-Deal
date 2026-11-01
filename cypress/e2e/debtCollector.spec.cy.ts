@@ -2,7 +2,7 @@ import { applyMove, beginGame, waitingOn } from "../../lib/gameHelpers";
 import { autoPay } from "../../lib/payment";
 import { cardData } from "../../lib/cardData";
 import type { Card, GameState, Move, PropertySet } from "../../lib/types";
-import { drawCards, takeSeat } from "../support/dealHelper";
+import { acceptAll, drawCards, takeSeat } from "../support/dealHelper";
 
 const card = (id: string) => cardData.find((c) => c.id === id)!;
 const debtCollector = card("action-debt-collector-1");
@@ -28,7 +28,7 @@ const act = (game: GameState, actorId: number, move: Move) => {
   if (!result.ok) throw new Error(result.error);
   return result.game;
 };
-const collect = (game: GameState) => act(game, 0, { type: "play", cardId: debtCollector.id, targetId: 1 });
+const collect = (game: GameState) => acceptAll(act(game, 0, { type: "play", cardId: debtCollector.id, targetId: 1 }));
 
 describe("Debt Collector", () => {
   it("makes the chosen player owe 5M", () => {
@@ -139,16 +139,13 @@ describe("Pay automatically", () => {
   });
 });
 
-const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
-
 describe("Debt Collector in the game", () => {
   // player 1 opens with a debt collector, and player 2 gets a money card by their first draw
   const seed = Array.from({ length: 5000 }, (_, i) => i + 1).find((s) => {
     const game = beginGame(2, s);
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     return game.players[0].hand.some((c) => c.id.startsWith("action-debt-collector"))
-      && p2Cards.some((c) => c.type === "money")
-      && !p2Cards.some(isSayNo); // otherwise player 2 gets asked about just say no first
+      && p2Cards.some((c) => c.type === "money");
   });
 
   it("hands over to the player who owes, then back once they've paid", () => {
@@ -172,6 +169,7 @@ describe("Debt Collector in the game", () => {
 
     cy.get('[data-cy="pass-screen"]').should("contain.text", "Player 2");
     takeSeat();
+    cy.get('[data-cy="respond-accept"]').click();
     cy.get('[data-cy="payment-panel"]').should("contain.text", "Pay Player 1 5M");
     cy.get('[data-cy="pay-auto"]').click();
 

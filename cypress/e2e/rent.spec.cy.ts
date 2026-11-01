@@ -3,7 +3,7 @@ import { rentFor } from "../../lib/rent";
 import { cardData } from "../../lib/cardData";
 import { SETS } from "../../lib/types";
 import type { Card, Colour, GameState, Move, PropertySet, RentCard } from "../../lib/types";
-import { drawCards, takeSeat } from "../support/dealHelper";
+import { acceptAll, drawCards, takeSeat } from "../support/dealHelper";
 
 const card = (id: string) => cardData.find((c) => c.id === id)!;
 const set = (colour: Colour, ...ids: string[]): PropertySet =>
@@ -65,7 +65,7 @@ const act = (game: GameState, move: Move) => {
 
 describe("Rent cards", () => {
   it("charges every other player with a two colour rent card", () => {
-    const after = act(setup(brownRent), { type: "rent", cardId: brownRent.id, colour: "brown" });
+    const after = acceptAll(act(setup(brownRent), { type: "rent", cardId: brownRent.id, colour: "brown" }));
 
     expect(after.pending?.debts).to.deep.equal([
       { playerId: 1, amount: 2, status: "paying", sayNoCount: 0 },
@@ -76,7 +76,7 @@ describe("Rent cards", () => {
   });
 
   it("charges only the chosen player with the any colour rent card", () => {
-    const after = act(setup(anyRent), { type: "rent", cardId: anyRent.id, colour: "brown", targetId: 2 });
+    const after = acceptAll(act(setup(anyRent), { type: "rent", cardId: anyRent.id, colour: "brown", targetId: 2 }));
     expect(after.pending?.debts).to.deep.equal([{ playerId: 2, amount: 2, status: "paying", sayNoCount: 0 }]);
   });
 
@@ -146,8 +146,7 @@ describe("Rent in the game", () => {
     const p1Draws = [...game.deck.slice(0, 2), ...game.deck.slice(4, 6)];
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     const fits = rentCard && property && ![...p1, ...p1Draws].some(isDouble)
-      && p2Cards.some((c) => c.type === "money")
-      && !p2Cards.some((c) => c.type === "action" && c.action === "just-say-no"); // otherwise player 2 gets asked first
+      && p2Cards.some((c) => c.type === "money");
     return fits ? { seed, rentCard, property: property as Extract<Card, { type: "property" }> } : null;
   }).find(Boolean)!;
 
@@ -176,6 +175,7 @@ describe("Rent in the game", () => {
     cy.get(`[data-cy="colour-${property.colour}"]`).click();
 
     takeSeat();
+    cy.get('[data-cy="respond-accept"]').click();
     cy.get('[data-cy="payment-panel"]').should("contain.text", `Pay Player 1 ${SETS[property.colour].rent[0]}M`);
     cy.get('[data-cy="pay-auto"]').click();
 

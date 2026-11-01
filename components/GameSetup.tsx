@@ -74,7 +74,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
 
         {/* HOT-SEAT ONLY: online, everyone joins with a room code instead */}
         <p className="text-xs text-black/60">Everyone plays on this device, passing it round between turns.</p>
-        <label className="flex cursor-pointer items-start gap-2 text-sm">
+        {/* <label className="flex cursor-pointer items-start gap-2 text-sm">
           <input
             type="checkbox"
             data-cy="pass-screens"
@@ -88,7 +88,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
               Hides each hand until the next player is ready. Turn off when playing on your own.
             </span>
           </span>
-        </label>
+        </label> */}
 
         <button
           type="button"

@@ -7,7 +7,7 @@ import MiniSet from "@/components/MiniSet";
 interface GameOverProps {
   players: { id: number; name: string; properties: PropertySet[]; bank: CardType[] }[];
   winnerId: number;
-  onPlayAgain: () => void;
+  onPlayAgain?: () => void; // PLANNED: online, a rematch in the same room
   onClose: () => void; // hide this to look at the final board
 }
 
@@ -82,14 +82,16 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
           >
             View the board
           </button>
-          <button
-            type="button"
-            data-cy="play-again"
-            onClick={onPlayAgain}
-            className="cursor-pointer rounded bg-green-700 px-3 py-1 text-white"
-          >
-            Play again
-          </button>
+          {onPlayAgain && (
+            <button
+              type="button"
+              data-cy="play-again"
+              onClick={onPlayAgain}
+              className="cursor-pointer rounded bg-green-700 px-3 py-1 text-white"
+            >
+              Play again
+            </button>
+          )}
         </div>
       </div>
 

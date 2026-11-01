@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Card, LogEntry, Player, OpponentView, Move } from "../lib/types";
-import { TurnStatus } from "../lib/gameHelpers";
+import type { Move } from "../lib/types";
+import type { PlayerView } from "../lib/playerView";
 import PlayerHand from "./PlayerHand/PlayerHand";
 import DrawPile from "./DrawPile/DrawPile";
 import ActionPile from "./ActionPile/ActionPile";
@@ -21,17 +21,10 @@ import OpponentPanel from "./OpponentPanel";
   PLANNED:
   - clicking an opponent's bank or properties opens the full view (see the PLANNED notes in PlayerBank and PropertyPile)
 */
-export interface GameBoardProps {
-  me: Player;
-  opponents: OpponentView[];
-  drawPileCount: number;
-  discardPile: Card[];
-  currentPlayerId: number;
+export interface GameBoardProps extends PlayerView {
   onMove: (move: Move) => void;
-  turn: TurnStatus,
   moveError: string | null;
-  onNewGame: () => void;
-  log: LogEntry[];
+  onNewGame?: () => void; // HOT-SEAT ONLY: deal again on the same device
   paused: boolean; // hot-seat: the pass screen is covering the board
 }
 
@@ -85,14 +78,16 @@ export default function GameBoard({
       </div>
 
       <div className="relative grid min-h-0 place-items-center">
-        <button
-          type="button"
-          data-cy="new-game"
-          onClick={onNewGame}
-          className="absolute left-0 top-0 cursor-pointer rounded border-2 border-black/40 px-2 py-1 text-xs text-black"
-        >
-          Deal again
-        </button>
+        {onNewGame && (
+          <button
+            type="button"
+            data-cy="new-game"
+            onClick={onNewGame}
+            className="absolute left-0 top-0 cursor-pointer rounded border-2 border-black/40 px-2 py-1 text-xs text-black"
+          >
+            Deal again
+          </button>
+        )}
         <div className="absolute bottom-0 left-0 top-9 hidden w-56 lg:flex">
           <GameLog log={log} viewerId={me.id} names={names} />
         </div>

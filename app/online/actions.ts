@@ -8,7 +8,6 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/database.types";
 import { getUserId } from "@/lib/supabase/server";
 
-// postgres's error code when a primary key or unique rule is broken
 const UNIQUE_VIOLATION = "23505";
 const NOT_SIGNED_IN = { error: "You're not signed in. Refresh the page and try again." };
 
@@ -26,7 +25,6 @@ export async function createRoom(rawName: string): Promise<{ code: string } | { 
   if (problem) return { error: problem };
 
   const db = createAdminSupabase();
-  // a new code can clash with an existing room, so try a few
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = makeRoomCode();
     const { error } = await db.from("rooms").insert({ code, host_id: userId });
@@ -37,7 +35,7 @@ export async function createRoom(rawName: string): Promise<{ code: string } | { 
       .from("room_players")
       .insert({ room_code: code, user_id: userId, seat: 0, display_name: name });
     if (seatError) {
-      await db.from("rooms").delete().eq("code", code); // don't leave an empty room behind
+      await db.from("rooms").delete().eq("code", code); // don't leave an empty room behind CHECK if this is working in test db
       return { error: "Couldn't create a room. Try again." };
     }
     return { code };
@@ -86,7 +84,7 @@ export async function leaveRoom(rawCode: string): Promise<{ error: string } | nu
   const db = createAdminSupabase();
   const { error } =
     lobby.host_id === userId
-      ? await db.from("rooms").delete().eq("code", code) // the host leaving closes the room. their row goes with it (on delete cascade)
+      ? await db.from("rooms").delete().eq("code", code) // the host leaving closes the room. their row goes with it (on delete cascade) CHECK
       : await db.from("room_players").delete().eq("room_code", code).eq("user_id", userId);
   if (error) return { error: "Couldn't leave. Try again." };
   after(() => announceRoomChange(code));

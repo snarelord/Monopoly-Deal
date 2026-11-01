@@ -17,9 +17,9 @@ export default function ActionPile({ cards }: { cards: CardType[] }) {
           <div className="aspect-(--card-ratio) rounded-lg border-2 border-dashed border-black/30" />
         )}
       </div>
-      <span className="text-sm font-semibold text-black">
+      {/* <span className="text-sm font-semibold text-black">
         Action pile · <span data-cy="action-pile-count">{cards.length}</span>
-      </span>
+      </span> */}
     </div>
   );
 }

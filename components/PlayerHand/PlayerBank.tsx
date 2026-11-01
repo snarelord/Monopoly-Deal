@@ -32,7 +32,7 @@ export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
       </div>
 
       {cards.length === 0 ? (
-        <div className="grid flex-1 place-items-center rounded border-2 border-dashed border-black/30 text-xs">
+        <div className="grid flex-1 place-items-center rounded border-2 border-black/30 text-xs">
           Empty
         </div>
       ) : (

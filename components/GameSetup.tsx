@@ -83,7 +83,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
             className="mt-1"
           />
           <span>
-            Pass-the-device screens
+            Pass the device screens
             <span className="block text-xs text-black/60">
               Hides each hand until the next player is ready. Turn off when playing on your own.
             </span>

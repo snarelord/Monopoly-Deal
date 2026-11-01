@@ -47,6 +47,7 @@ describe("Game log", () => {
     game = act(game, 0, { type: "play", cardId: debtCollector.id, targetId: 1 });
     expect(last(game)).to.include({ kind: "played", playerId: 0, amount: 5 });
 
+    game = act(game, 1, { type: "accept" });
     game = act(game, 1, { type: "pay", cardIds: ["money-5m-1"] });
     expect(last(game)).to.include({ kind: "paid", playerId: 1, toId: 0 });
   });
@@ -66,6 +67,7 @@ describe("Game log", () => {
     });
     game = act(game, 0, { type: "play", cardId: debtCollector.id, targetId: 1 });
     game = act(game, 1, { type: "just-say-no", cardId: "action-just-say-no-1" });
+    game = act(game, 0, { type: "accept" }); // lets the no stand
     expect(kinds(game)).to.deep.equal(["played", "said-no", "cancelled"]);
     expect(last(game)).to.include({ playerId: 0, forId: 1 });
   });
@@ -73,8 +75,8 @@ describe("Game log", () => {
   it("records a steal", () => {
     const slyDeal = card("action-sly-deal-1");
     const game = setup({ 0: { hand: [slyDeal] }, 1: { properties: [set("orange", "property-vine-street")] } });
-    const after = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
-    expect(last(after)).to.include({ kind: "took", playerId: 0, fromId: 1 });
+    const played = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
+    expect(last(act(played, 1, { type: "accept" }))).to.include({ kind: "took", playerId: 0, fromId: 1 });
   });
 
   it("records the end of a turn against the player and turn it ended", () => {

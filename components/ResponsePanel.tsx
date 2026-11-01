@@ -50,9 +50,11 @@ export default function ResponsePanel({ me, pendingCard, effect, debt, names, on
       >
         <h2 className="text-lg font-semibold">{heading}</h2>
         <p className="text-sm text-black/70">
-          {countering
-            ? "Play your own Just Say No to cancel theirs, or let it stand."
-            : `Play a Just Say No to cancel it, or accept and ${effect.kind === "pay" ? "pay" : "let it happen"}.`}
+          {!sayNo
+            ? `You don't have a Just Say No, so ${countering ? "theirs stands" : effect.kind === "pay" ? "you'll have to pay" : "it goes ahead"}.`
+            : countering
+              ? "Play your own Just Say No to cancel theirs, or let it stand."
+              : `Play a Just Say No to cancel it, or accept and ${effect.kind === "pay" ? "pay" : "let it happen"}.`}
         </p>
         <div className="flex justify-end gap-2">
           <button
@@ -61,7 +63,7 @@ export default function ResponsePanel({ me, pendingCard, effect, debt, names, on
             onClick={() => onMove({ type: "accept", debtorId })}
             className="cursor-pointer rounded border-2 border-black px-3 py-1"
           >
-            {countering ? "Let it go" : "Accept"}
+            {!sayNo ? "OK" : countering ? "Let it go" : "Accept"}
           </button>
           <button
             type="button"

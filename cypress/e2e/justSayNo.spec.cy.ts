@@ -47,8 +47,11 @@ describe("Just Say No", () => {
     expect(waitingOn(after)).to.deep.equal([1]);
   });
 
-  it("skips straight to paying when they're not holding one", () => {
-    expect(status(collect(setup([debtCollector], [])))).to.equal("paying");
+  it("asks them even when they're not holding one, so the wait doesn't give it away", () => {
+    const after = collect(setup([debtCollector], []));
+    expect(status(after)).to.equal("responding");
+    expect(waitingOn(after)).to.deep.equal([1]);
+    expect(status(act(after, 1, { type: "accept" }))).to.equal("paying");
   });
 
   it("goes on to paying when they accept", () => {
@@ -58,7 +61,8 @@ describe("Just Say No", () => {
   });
 
   it("cancels the action when they say no", () => {
-    const after = act(collect(setup([debtCollector], [no1])), 1, { type: "just-say-no", cardId: no1.id });
+    const saidNo = act(collect(setup([debtCollector], [no1])), 1, { type: "just-say-no", cardId: no1.id });
+    const after = act(saidNo, 0, { type: "accept" }); // player 0 lets it stand
 
     expect(after.pending).to.equal(null);
     expect(waitingOn(after)).to.deep.equal([0]);
@@ -80,8 +84,15 @@ describe("Just Say No", () => {
     expect(waitingOn(saidNo)).to.deep.equal([0]);
 
     const saidNoBack = act(saidNo, 0, { type: "just-say-no", cardId: no2.id });
-    expect(status(saidNoBack)).to.equal("paying"); // two no's: it's back on
+    expect(status(saidNoBack)).to.equal("responding"); // two no's: it's back on, and player 1 is asked again
     expect(saidNoBack.cardsPlayed).to.equal(2); // on your own turn it uses a play
+    expect(status(act(saidNoBack, 1, { type: "accept" }))).to.equal("paying");
+  });
+
+  it("asks the player who played the action about saying no back, even when they're not holding one", () => {
+    const saidNo = act(collect(setup([debtCollector], [no1])), 1, { type: "just-say-no", cardId: no1.id });
+    expect(status(saidNo)).to.equal("countering");
+    expect(waitingOn(saidNo)).to.deep.equal([0]);
   });
 
   it("cancels it when the player who played the action lets the no stand", () => {
@@ -91,12 +102,14 @@ describe("Just Say No", () => {
     expect(after.players[0].hand.map((c) => c.id)).to.deep.equal([no2.id]); // kept it
   });
 
-  it("goes back and forth until someone runs out", () => {
+  it("goes back and forth until someone lets it stand", () => {
     let game = collect(setup([debtCollector, no3], [no1, no2]));
     game = act(game, 1, { type: "just-say-no", cardId: no1.id }); // 1 no: cancelled...
     game = act(game, 0, { type: "just-say-no", cardId: no3.id }); // 2: back on...
     expect(status(game)).to.equal("responding");
-    game = act(game, 1, { type: "just-say-no", cardId: no2.id }); // 3: cancelled, and player 0 has none left
+    game = act(game, 1, { type: "just-say-no", cardId: no2.id }); // 3: cancelled again
+    expect(status(game)).to.equal("countering"); // still asked, though player 0 has none left
+    game = act(game, 0, { type: "accept" });
 
     expect(game.pending).to.equal(null);
     expect(game.players[0].bank).to.have.length(0);
@@ -111,9 +124,11 @@ describe("Just Say No", () => {
   it("only gets the player who says no out of a birthday", () => {
     let game = act(setup([birthday], [no1], 3), 0, { type: "play", cardId: birthday.id });
     expect(status(game, 1)).to.equal("responding");
-    expect(status(game, 2)).to.equal("paying");
+    expect(status(game, 2)).to.equal("responding"); // asked too, though they hold nothing
 
+    game = act(game, 2, { type: "accept" });
     game = act(game, 1, { type: "just-say-no", cardId: no1.id });
+    game = act(game, 0, { type: "accept" }); // player 0 lets it stand
     expect(status(game, 1)).to.equal("done");
     expect(waitingOn(game)).to.deep.equal([2]);
 
@@ -127,6 +142,7 @@ describe("Just Say No", () => {
       type: "rent", cardId: brownRent.id, colour: "brown", doubleRentIds: [doubleRent.id],
     });
     game = act(game, 1, { type: "just-say-no", cardId: no1.id });
+    game = act(game, 0, { type: "accept" });
 
     expect(game.pending).to.equal(null);
     expect(game.discardPile.map((c) => c.id)).to.deep.equal([brownRent.id, doubleRent.id, no1.id]);
@@ -141,7 +157,7 @@ describe("Just Say No", () => {
 describe("Just Say No in the game", () => {
   const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
 
-  // player 1 opens with a debt collector and never holds a just say no (so can't say no back),
+  // player 1 opens with a debt collector and never holds a just say no (so their say no back button is greyed out),
   // player 2 gets a money card and a just say no by their first draw
   const seed = Array.from({ length: 20000 }, (_, i) => i + 1).find((s) => {
     const game = beginGame(2, s);
@@ -175,9 +191,12 @@ describe("Just Say No in the game", () => {
     cy.get('[data-cy="response-panel"]').should("have.attr", "data-status", "responding");
     cy.get('[data-cy="respond-say-no"]').click();
 
-    // player 1 has nothing to say no back with, so it's cancelled and their turn carries on
+    // player 1 is asked about saying no back, has nothing to do it with, and lets it stand
     cy.get('[data-cy="pass-screen"]').should("contain.text", "Player 1");
     takeSeat();
+    cy.get('[data-cy="response-panel"]').should("have.attr", "data-status", "countering");
+    cy.get('[data-cy="respond-say-no"]').should("be.disabled");
+    cy.get('[data-cy="respond-accept"]').click();
     cy.get('[data-cy="response-panel"]').should("not.exist");
     cy.get('[data-cy="owing"]').should("not.exist");
     cy.get('[data-cy="bank-0"]').should("have.attr", "data-count", "0");

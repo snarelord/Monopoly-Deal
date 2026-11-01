@@ -92,7 +92,7 @@ export interface Player {
 /*
   one player's share of a pending action, e.g. 5M owed from a debt collector.
   status is whose move it is on this debt:
-  - responding: the debtor can play a just say no, or accept
+  - responding: the debtor can play a just say no, or accept. everyone is asked, so nobody can tell who's holding one
   - countering: the debtor said no, the player who played the action can say no back, or let it go
   - paying: the debtor is picking cards to pay with
   - done: paid, let off, or cancelled (an odd sayNoCount means it was cancelled)

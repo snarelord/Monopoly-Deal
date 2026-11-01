@@ -2,7 +2,7 @@ import { applyMove, beginGame, waitingOn } from "../../lib/gameHelpers";
 import { cardData } from "../../lib/cardData";
 import { autoPay } from "../../lib/payment";
 import type { Card, GameState, Move } from "../../lib/types";
-import { drawCards, takeSeat } from "../support/dealHelper";
+import { acceptAll, drawCards, takeSeat } from "../support/dealHelper";
 
 const card = (id: string) => cardData.find((c) => c.id === id)!;
 const birthday = card("action-birthday-1");
@@ -24,7 +24,7 @@ const act = (game: GameState, actorId: number, move: Move) => {
   if (!result.ok) throw new Error(result.error);
   return result.game;
 };
-const celebrate = (game: GameState) => act(game, 0, { type: "play", cardId: birthday.id });
+const celebrate = (game: GameState) => acceptAll(act(game, 0, { type: "play", cardId: birthday.id }));
 
 describe("Birthday", () => {
   it("makes every other player owe 2M", () => {
@@ -90,16 +90,13 @@ describe("Birthday paid automatically from a big bank", () => {
   });
 });
 
-const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
-
 describe("Birthday in the game", () => {
   // player 1 opens with a birthday card, and player 2 gets a money card by their first draw
   const seed = Array.from({ length: 5000 }, (_, i) => i + 1).find((s) => {
     const game = beginGame(2, s);
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     return game.players[0].hand.some((c) => c.id.startsWith("action-birthday"))
-      && p2Cards.some((c) => c.type === "money")
-      && !p2Cards.some(isSayNo); // otherwise player 2 gets asked about just say no first
+      && p2Cards.some((c) => c.type === "money");
   });
 
   it("collects 2M from the other player", () => {
@@ -120,6 +117,7 @@ describe("Birthday in the game", () => {
     cy.get('[data-cy="action-play"]').click();
 
     takeSeat();
+    cy.get('[data-cy="respond-accept"]').click();
     cy.get('[data-cy="payment-panel"]').should("contain.text", "Pay Player 1 2M");
     cy.get('[data-cy="pay-auto"]').click();
 
@@ -135,7 +133,7 @@ describe("Birthday paid automatically in the game", () => {
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     const notes = p2Cards.filter((c) => c.type === "money").slice(0, 3); // 3 plays to bank them
     const fits = game.players[0].hand.some((c) => c.id.startsWith("action-birthday"))
-      && notes.some((c) => c.value === 10) && notes.length === 3 && !p2Cards.some(isSayNo);
+      && notes.some((c) => c.value === 10) && notes.length === 3;
     return fits ? { seed, notes } : null;
   }).find(Boolean)!;
 
@@ -164,6 +162,7 @@ describe("Birthday paid automatically in the game", () => {
     cy.get('[data-cy="my-hand"] [data-card-id^="action-birthday"]').first().click({ force: true });
     cy.get('[data-cy="action-play"]').click();
     takeSeat();
+    cy.get('[data-cy="respond-accept"]').click();
     cy.get('[data-cy="pay-auto"]').click();
     takeSeat();
 

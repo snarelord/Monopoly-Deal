@@ -25,10 +25,11 @@ export default function TurnInfo({ turn, names, moveError }: { turn: TurnStatus;
       )}
       {turn.owing.map((debt) => (
         <div key={debt.playerId} data-cy="owing" data-status={debt.status} className="mt-1 font-semibold text-amber-700">
+          {/* the same words whether or not anyone holds a just say no */}
           {debt.status === "countering"
-            ? `${names[debt.playerId]} said no, ${names[debt.toPlayerId]} can say no back`
+            ? `${names[debt.playerId]} said no. Waiting on ${names[debt.toPlayerId]}`
             : debt.status === "responding"
-              ? `${names[debt.playerId]} can Just Say No to the ${turn.pendingCard?.name}`
+              ? `Waiting on ${names[debt.playerId]} to answer the ${turn.pendingCard?.name}`
               : `${names[debt.playerId]} owes ${names[debt.toPlayerId]} ${debt.amount}M`}
         </div>
       ))}

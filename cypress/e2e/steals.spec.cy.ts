@@ -2,7 +2,7 @@ import { applyMove, beginGame, PLAYS_PER_TURN } from "../../lib/gameHelpers";
 import { getCardActions } from "../../lib/cardActions";
 import { cardData } from "../../lib/cardData";
 import type { ActionCard, Card, Colour, GameState, Move, Player, PropertySet } from "../../lib/types";
-import { drawCards, takeSeat } from "../support/dealHelper";
+import { acceptAll, drawCards, takeSeat } from "../support/dealHelper";
 
 const card = (id: string) => {
   const found = cardData.find((c) => c.id === id);
@@ -36,12 +36,14 @@ const act = (game: GameState, actorId: number, move: Move) => {
   if (!result.ok) throw new Error(result.error);
   return result.game;
 };
+// a steal that goes ahead, with the target accepting
+const playAccepted = (game: GameState, move: Move) => acceptAll(act(game, 0, move));
 const cardIds = (p: Player) => p.properties.map((s) => `${s.colour}:${s.cards.map((c) => c.id).join(",")}`);
 
 describe("Sly Deal", () => {
   it("takes a property that isn't in a complete set", () => {
     const game = setup({ 0: { hand: [slyDeal] }, 1: { properties: [vine(), darkBlue()] } });
-    const after = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
+    const after = playAccepted(game, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
 
     expect(cardIds(after.players[0])).to.deep.equal(["orange:property-vine-street"]);
     expect(cardIds(after.players[1])).to.deep.equal(["darkBlue:property-park-lane,property-mayfair"]);
@@ -54,13 +56,13 @@ describe("Sly Deal", () => {
       0: { hand: [slyDeal], properties: [set("orange", ["property-bow-street"])] },
       1: { properties: [vine()] },
     });
-    const after = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
+    const after = playAccepted(game, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
     expect(cardIds(after.players[0])).to.deep.equal(["orange:property-bow-street,property-vine-street"]);
   });
 
   it("keeps a wildcard as the colour it was being used as", () => {
     const game = setup({ 0: { hand: [slyDeal] }, 1: { properties: [set("pink", ["wildcard-orange-pink-1"])] } });
-    const after = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "wildcard-orange-pink-1" });
+    const after = playAccepted(game, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "wildcard-orange-pink-1" });
     expect(cardIds(after.players[0])).to.deep.equal(["pink:wildcard-orange-pink-1"]);
   });
 
@@ -75,7 +77,7 @@ describe("Sly Deal", () => {
     expect(attempt(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1 }).ok).to.equal(false);
   });
 
-  it("waits for a target holding a Just Say No, and only takes it if they accept", () => {
+  it("waits for the target to answer, and only takes it if they accept", () => {
     const game = setup({ 0: { hand: [slyDeal] }, 1: { hand: [sayNo], properties: [vine()] } });
     const played = act(game, 0, { type: "play", cardId: slyDeal.id, targetId: 1, takeId: "property-vine-street" });
     expect(played.pending?.debts[0].status).to.equal("responding");
@@ -85,7 +87,7 @@ describe("Sly Deal", () => {
     expect(accepted.pending).to.equal(null);
     expect(cardIds(accepted.players[0])).to.deep.equal(["orange:property-vine-street"]);
 
-    const refused = act(played, 1, { type: "just-say-no", cardId: sayNo.id });
+    const refused = act(act(played, 1, { type: "just-say-no", cardId: sayNo.id }), 0, { type: "accept" });
     expect(refused.pending).to.equal(null);
     expect(cardIds(refused.players[1])).to.deep.equal(["orange:property-vine-street"]);
   });
@@ -97,7 +99,7 @@ describe("Forced Deal", () => {
       0: { hand: [forcedDeal], properties: [vine()] },
       1: { properties: [set("pink", ["property-pall-mall"])] },
     });
-    const after = act(game, 0, {
+    const after = playAccepted(game, {
       type: "play", cardId: forcedDeal.id, targetId: 1, takeId: "property-pall-mall", giveId: "property-vine-street",
     });
     expect(cardIds(after.players[0])).to.deep.equal(["pink:property-pall-mall"]);
@@ -129,7 +131,7 @@ describe("Deal Breaker", () => {
 
   it("takes a whole complete set, buildings and all", () => {
     const game = setup({ 0: { hand: [dealBreaker] }, 1: { properties: [darkBlue({ house }), vine()] } });
-    const after = act(game, 0, { type: "play", cardId: dealBreaker.id, targetId: 1, takeId: "property-park-lane" });
+    const after = playAccepted(game, { type: "play", cardId: dealBreaker.id, targetId: 1, takeId: "property-park-lane" });
 
     expect(cardIds(after.players[0])).to.deep.equal(["darkBlue:property-park-lane,property-mayfair"]);
     expect(after.players[0].properties[0].house?.id).to.equal(house.id);
@@ -147,7 +149,7 @@ describe("Deal Breaker", () => {
       0: { hand: [dealBreaker], properties: [brown(), set("green", ["property-bond-street", "property-oxford-street", "property-regent-street"])] },
       1: { properties: [darkBlue()] },
     });
-    const after = act(game, 0, { type: "play", cardId: dealBreaker.id, targetId: 1, takeId: "property-mayfair" });
+    const after = playAccepted(game, { type: "play", cardId: dealBreaker.id, targetId: 1, takeId: "property-mayfair" });
     expect(after.winnerId).to.equal(0);
   });
 });
@@ -173,14 +175,12 @@ describe("Steal menu options", () => {
 });
 
 describe("Sly Deal in the game", () => {
-  const isSayNo = (c: Card) => c.type === "action" && c.action === "just-say-no";
-
-  // player 1 opens with a sly deal, player 2 has a property by their first draw and no just say no
+  // player 1 opens with a sly deal, player 2 has a property by their first draw
   const found = Array.from({ length: 20000 }, (_, i) => i + 1).map((seed) => {
     const game = beginGame(2, seed);
     const p2Cards = [...game.players[1].hand, ...game.deck.slice(2, 4)];
     const property = p2Cards.find((c) => c.type === "property");
-    const fits = game.players[0].hand.some((c) => c.id.startsWith("action-sly-deal")) && property && !p2Cards.some(isSayNo);
+    const fits = game.players[0].hand.some((c) => c.id.startsWith("action-sly-deal")) && property;
     return fits ? { seed, property: property! } : null;
   }).find(Boolean)!;
 
@@ -207,9 +207,13 @@ describe("Sly Deal in the game", () => {
     cy.get(`[data-cy="steal-take"] [data-card-id="${property.id}"]`).click();
     cy.get('[data-cy="steal-confirm"]').click();
 
-    // player 2 has no just say no, so it's taken straight away and it's still player 1's turn
+    // player 2 is asked first, then it's taken and back to player 1's turn
     cy.get('[data-cy="steal-picker"]').should("not.exist");
-    cy.get('[data-cy="pass-screen"]').should("not.exist");
+    cy.get('[data-cy="pass-screen"]').should("contain.text", "Player 2");
+    takeSeat();
+    cy.get('[data-cy="respond-accept"]').click();
+    cy.get('[data-cy="pass-screen"]').should("contain.text", "Player 1");
+    takeSeat();
     cy.get(`[data-cy="properties-0"] [data-card-id="${property.id}"]`).should("exist");
   });
 });

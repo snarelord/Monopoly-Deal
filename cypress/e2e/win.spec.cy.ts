@@ -68,6 +68,7 @@ describe("Winning", () => {
       1: { properties: [set("green", bondStreet.id)] },
     });
     game = act(game, 0, { type: "play", cardId: debtCollector.id, targetId: 1 });
+    game = act(game, 1, { type: "accept" });
     game = act(game, 1, { type: "pay", cardIds: [bondStreet.id] }); // all they have, so short is fine
 
     expect(game.isGameOver).to.equal(true);
@@ -85,6 +86,7 @@ describe("Winning", () => {
       3,
     );
     game = act(game, 0, { type: "play", cardId: birthday.id });
+    game = act(game, 1, { type: "accept" });
     game = act(game, 1, { type: "pay", cardIds: [bondStreet.id] }); // player 2 still owes at this point
 
     expect(game.winnerId).to.equal(0);

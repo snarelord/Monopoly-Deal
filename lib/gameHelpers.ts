@@ -316,12 +316,9 @@ function startAction(
     if (effect.kind === "pay" && payableCards(target).length === 0) {
       next = logged(next, { kind: "paid", playerId, toId: fromPlayerId, cards: [] });
       debts.push({ ...debt, status: "done" });
-    } else if (holdsSayNo(target)) {
-      debts.push(debt);
     } else {
-      const ahead = goAhead(next, effect, fromPlayerId, debt);
-      next = ahead.game;
-      debts.push({ ...debt, status: ahead.status });
+      // asked even without a just say no, so the wait doesn't give away who's holding one
+      debts.push(debt);
     }
   }
   return withDebts(next, { card, fromPlayerId, effect, debts });
@@ -398,7 +395,6 @@ function withDebts(game: GameState, pending: PendingAction): GameState {
 }
 
 const isSayNo = (card: Card) => card.type === "action" && card.action === "just-say-no";
-const holdsSayNo = (player: Player) => player.hand.some(isSayNo);
 
 function respond(
   game: GameState,
@@ -443,17 +439,11 @@ function respond(
   }, { kind: "said-no", playerId: actorId, againstId: isAttacker ? debt.playerId : pending.fromPlayerId });
   const sayNoCount = debt.sayNoCount + 1;
 
-  if (isAttacker) {
-    // said no back: it's back on, unless the debtor has another just say no to answer with
-    const debtor = next.players.find((p) => p.id === debt.playerId)!;
-    if (holdsSayNo(debtor)) return update(next, "responding", sayNoCount);
-    const ahead = goAhead(next, pending.effect, pending.fromPlayerId, debt);
-    return update(ahead.game, ahead.status, sayNoCount);
-  }
+  // said no back: it's back on, and the debtor answers again
+  if (isAttacker) return update(next, "responding", sayNoCount);
 
-  const attacker = next.players.find((p) => p.id === pending.fromPlayerId)!;
-  const canCounter = holdsSayNo(attacker) && next.cardsPlayed < PLAYS_PER_TURN;
-  if (canCounter) return update(next, "countering", sayNoCount);
+  // the player who played it can say no back if they have a play left, and is asked whether or not they hold one
+  if (next.cardsPlayed < PLAYS_PER_TURN) return update(next, "countering", sayNoCount);
   return update(logged(next, cancelled), "done", sayNoCount);
 }
 

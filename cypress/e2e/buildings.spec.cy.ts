@@ -82,9 +82,9 @@ describe("Buildings and paying", () => {
   // player 0 plays a birthday (2M), player 1 owns a built up dark blue set and nothing in the bank
   const owed = (buildings = {}) =>
     act(
-      setup({ 0: { hand: [birthday] }, 1: { properties: [darkBlue(buildings)] } }),
-      0,
-      { type: "play", cardId: birthday.id },
+      act(setup({ 0: { hand: [birthday] }, 1: { properties: [darkBlue(buildings)] } }), 0, { type: "play", cardId: birthday.id }),
+      1,
+      { type: "accept" },
     );
 
   it("moves the buildings to the bank when a set stops being complete", () => {

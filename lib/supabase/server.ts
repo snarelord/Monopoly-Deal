@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { io } from 'next/cache';
 import type { Database } from "./database.types";
 
 export async function createServerSupabase() {
@@ -23,6 +24,7 @@ export async function createServerSupabase() {
 }
 
 export async function getUserId() {
+  await io(); // getClaims checks the token's expiry against the clock, so tell Next this is request-time work first
   const supabase = await createServerSupabase();
   const { data } = await supabase.auth.getClaims();
   return data?.claims.sub ?? null;

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { defaultName, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
+import Link from "next/link";
 
 const COUNTS = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
 
@@ -98,6 +99,9 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
         >
           Deal
         </button>
+        <Link href="/online" data-cy="play-online" className="text-center text-xs text-black/60 underline">
+          Play online instead
+        </Link>
       </div>
     </main>
   );

@@ -1,4 +1,5 @@
 import { drawCards, takeSeat } from "../support/dealHelper";
+import { CUSTOMISE_RULES_FEATURE } from "../../lib/featureFlag";
 
 const opponents = '[data-cy^="opponent-"]:not([data-cy="opponent-set"])';
 
@@ -95,5 +96,22 @@ describe("Choosing the number of players", () => {
     cy.get('[data-cy="end-turn"]').click();
     cy.get('[data-cy="pass-screen"]').should("not.exist");
     cy.get('[data-cy="turn-info"]').should("have.attr", "data-player", "1");
+  });
+});
+
+describe("House rules", () => {
+  it("lists the options, greyed out until the feature is turned on", () => {
+    cy.visit("/");
+    cy.get('[data-cy="house-rules"] summary').click();
+    cy.get('[data-cy="rule-win-three-sets"]').should("be.checked");
+    cy.get('[data-cy="house-rules"] input').should("have.length", 13);
+    if (CUSTOMISE_RULES_FEATURE) {
+      cy.get('[data-cy="rule-no-mercy"]').should("be.enabled");
+      cy.get('[data-cy="rule-keep-duplicates"]').should("be.disabled"); // until the deck is doubled
+      cy.get('[data-cy="rule-double-deck"]').check();
+      cy.get('[data-cy="rule-keep-duplicates"]').should("be.enabled");
+    } else {
+      cy.get('[data-cy="house-rules"] input').each((input) => cy.wrap(input).should("be.disabled"));
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { defaultName, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
 import Link from "next/link";
+import HouseRules from "@/components/HouseRules";
 
 const COUNTS = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
 
@@ -25,7 +26,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
     <main className="grid min-h-dvh place-items-center p-4">
       <div
         data-cy="game-setup"
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
+        className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
       >
         <h1 className="text-2xl font-bold">Monopoly Deal</h1>
 
@@ -89,6 +90,8 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
             </span>
           </span>
         </label>
+
+        <HouseRules />
 
         <button
           type="button"

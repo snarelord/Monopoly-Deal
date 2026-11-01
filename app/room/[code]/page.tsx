@@ -5,6 +5,7 @@ import { viewFor } from "@/lib/playerView";
 import { tidyCode } from "@/lib/roomCode";
 import { getGame, getLobby, type Lobby } from "@/lib/rooms";
 import { getUserId } from "@/lib/supabase/server";
+import HouseRules from "@/components/HouseRules";
 import JoinForm from "./JoinForm";
 import { CopyLinkButton, LeaveButton, StartButton } from "./LobbyButtons";
 import OnlineGame from "./OnlineGame";
@@ -30,7 +31,7 @@ function Panel({ children, ...props }: { children: ReactNode; "data-cy"?: string
     <main className="grid min-h-dvh place-items-center p-4">
       <div
         {...props}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
+        className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
       >
         {children}
       </div>
@@ -117,6 +118,7 @@ function RoomView({ code, userId, lobby }: { code: string; userId: string | null
           : `Waiting for ${host?.display_name} to start.`}
       </p>
 
+      {isHost && <HouseRules />}
       {isHost && <StartButton code={code} canStart={lobby.players.length >= MIN_PLAYERS} />}
       <LeaveButton code={code} isHost={isHost} />
     </Panel>

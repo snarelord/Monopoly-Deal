@@ -1,10 +1,11 @@
 "use server";
 
 import { after } from "next/server";
-import { beginGame, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
+import { beginGame, applyMove, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
 import { makeRoomCode, ROOM_CODE_LENGTH, tidyCode } from "@/lib/roomCode";
-import { announceRoomChange, getLobby } from "@/lib/rooms";
+import { announceRoomChange, getGame, getLobby } from "@/lib/rooms";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import type { GameState, Move, MoveResult } from "@/lib/types";
 import type { Json } from "@/lib/supabase/database.types";
 import { getUserId } from "@/lib/supabase/server";
 
@@ -137,4 +138,42 @@ export async function startGame(rawCode: string): Promise<{ error: string } | nu
   if (error) return reopen("Couldn't start the game. Try again.");
   after(() => announceRoomChange(code));
   return null;
+}
+
+function tryMove(state: GameState, seat: number, move: Move): MoveResult {
+  try {
+    return applyMove(state, seat, move)
+  } catch {
+    return { ok: false, error: "That move isn't allowed." };
+  }
+}
+
+export async function makeMove(rawCode: string, move: Move): Promise<{ error: string } | null> {
+  const userId = await getUserId();
+  if(!userId) return NOT_SIGNED_IN;
+  const code = tidyCode(rawCode);
+
+  const seat = (await getLobby(code))?.players.find((player) => player.user_id === userId)?.seat;
+  if (seat === undefined || null) return { error: "You're not in this game."};
+
+  const db = createAdminSupabase();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const game = await getGame(code);
+    if (!game) return { error: "This game hasn't started yet."};
+    const result = tryMove(game.state, seat, move);
+    if (!result.ok) return { error: result.error };
+
+    const { data: saved, error } = await db.from("games").update({
+      state: result.game as unknown as NonNullable<Json>,
+      version: game.version + 1,
+      updated_at: new Date().toISOString(),
+    }).eq("room_code", code).eq("version", game.version).select("version");
+
+    if (error) return { error: "Couldn't save your move. Try again." }
+    if (saved.length > 0) {
+      after(() => announceRoomChange(code));
+      return null;
+    }
+  }
+  return { error: "Lots happening at once. Try that again." };
 }

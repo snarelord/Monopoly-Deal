@@ -11,7 +11,6 @@ const card = (id: string) => {
 const set = (colour: Colour, ...ids: string[]): PropertySet =>
   ({ colour, cards: ids.map(card) as PropertySet["cards"], house: null, hotel: null });
 
-// player 0 has drawn, the rest of each player is whatever `players` says (hands start empty)
 const setup = (players: Record<number, Partial<Player>>): GameState => {
   const game = beginGame(2, 1);
   return {
@@ -113,9 +112,9 @@ describe("Log wording and toasts", () => {
   });
 
   it("uses the players' names", () => {
-    const names = ["Alex", "Sam"];
-    expect(describeEntry(paid, 0, names)).to.equal("Sam paid you 5M (5M)");
-    expect(describeEntry(cancelled, 1, names)).to.equal("Alex's Debt Collector was cancelled for you");
+    const names = ["Kit", "Test"];
+    expect(describeEntry(paid, 0, names)).to.equal("Test paid you 5M (5M)");
+    expect(describeEntry(cancelled, 1, names)).to.equal("Kit's Debt Collector was cancelled for you");
   });
 
   it("toasts the player something was done to, not the one who did it", () => {

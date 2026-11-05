@@ -55,16 +55,16 @@ describe("Choosing the number of players", () => {
   it("uses the names typed in, and the default for any left blank", () => {
     cy.visit("/");
     cy.get('[data-cy="players-3"]').click();
-    cy.get('[data-cy="name-0"]').type("Alex");
+    cy.get('[data-cy="name-0"]').type("Kit");
     cy.get('[data-cy="name-1"]').type("  Sam  ");
     cy.get('[data-cy="deal"]').click();
 
-    cy.get('[data-cy="turn-info"]').should("contain.text", "Alex's turn");
+    cy.get('[data-cy="turn-info"]').should("contain.text", "Kit's turn");
     cy.get('[data-cy="opponent-1"]').should("contain.text", "Sam");
     cy.get('[data-cy="opponent-2"]').should("contain.text", "Player 3");
 
     cy.get('[data-cy="new-game"]').click();
-    cy.get('[data-cy="name-0"]').should("have.value", "Alex");
+    cy.get('[data-cy="name-0"]').should("have.value", "Kit");
     cy.get('[data-cy="name-1"]').should("have.value", "Sam");
     cy.get('[data-cy="name-2"]').should("have.value", "");
   });
@@ -81,8 +81,8 @@ describe("Choosing the number of players", () => {
 
   it("won't deal when two players have the same name", () => {
     cy.visit("/");
-    cy.get('[data-cy="name-0"]').type("Alex");
-    cy.get('[data-cy="name-1"]').type("alex");
+    cy.get('[data-cy="name-0"]').type("Kit");
+    cy.get('[data-cy="name-1"]').type("kit");
     cy.get('[data-cy="same-name"]').should("exist");
     cy.get('[data-cy="deal"]').should("be.disabled");
 

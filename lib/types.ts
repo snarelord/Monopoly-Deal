@@ -23,7 +23,7 @@ export type ActionType =
 
 export type CardActionId =
   | "bank" | "play" | "play-on-player" | "add-to-set"
-  | "place-property" | "pay-player" | "discard" | "rent";
+  | "place-property" | "pay-player"  | "rent";
 
 interface CardBase {
   id: string;
@@ -151,7 +151,7 @@ export type Move =
   // giveId is your card to swap for it (forced deal)
   | { type: "play"; cardId: string; targetId?: number; takeId?: string; giveId?: string }
   | { type: "place-property"; cardId: string; colour?: Colour }
-  | { type: "discard"; cardId: string }
+  | { type: "discard"; cardIds: string[] } // exactly enough cards to get back down to 7
   | { type: "pay"; cardIds: string[] } // bank and property cards chosen to pay a debt
   // targetId only for the any colour rent card, doubleRentIds are double the rent cards played with it
   | { type: "rent"; cardId: string; colour: Colour; targetId?: number; doubleRentIds?: string[] }

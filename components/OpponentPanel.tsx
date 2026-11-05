@@ -1,13 +1,21 @@
 import { useState } from "react";
-import type { Card as CardType, OpponentView } from "@/lib/types";
-import { isComplete } from "@/lib/types";
-import CardPreview from "@/components/PlayerHand/CardPreview";
-import MiniSet from "@/components/MiniSet";
+import type { OpponentView } from "@/lib/types";
+import { SETS_TO_WIN } from "@/lib/gameHelpers";
+import PlayerCards from "@/components/PlayerCards";
+import SetMeter, { completeCount } from "@/components/SetMeter";
 
-// PLANNED: clicking the bank total or a set opens the full view (see the notes in PlayerBank and PropertyPile)
-export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: OpponentView; isTheirTurn: boolean }) {
-  const [preview, setPreview] = useState<{ card: CardType; flipped: boolean } | null>(null);
+interface OpponentPanelProps {
+  opponent: OpponentView;
+  isTheirTurn: boolean;
+  compact?: boolean; // tighter rows when there are more players to fit in
+}
+
+export default function OpponentPanel({ opponent, isTheirTurn, compact = false }: OpponentPanelProps) {
+  const [open, setOpen] = useState(false);
   const bankTotal = opponent.bank.reduce((sum, card) => sum + card.value, 0);
+  const complete = completeCount(opponent.properties);
+  const nearlyWon = complete === SETS_TO_WIN - 1;
+  const stats = `Bank ${bankTotal}M, ${opponent.handCount} ${opponent.handCount === 1 ? "card" : "cards"}`;
 
   return (
     <section
@@ -15,43 +23,29 @@ export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: Opp
       data-bank-total={bankTotal}
       data-hand-count={opponent.handCount}
       data-their-turn={isTheirTurn}
-      className={`flex h-full min-w-0 flex-col rounded-lg border bg-white/60 text-black ${
-        isTheirTurn ? "border-green-600 ring-2 ring-green-600" : "border-black/20"
-      }`}
+      className="min-w-0"
     >
-      <header className="flex items-center justify-between gap-3 border-b border-black/10 px-3 py-1.5 text-sm">
-        <span className="font-heading flex min-w-0 items-baseline font-semibold">
-          <span className="truncate">{opponent.name}</span>
-          {isTheirTurn && <span className="ml-2 shrink-0 text-xs font-normal text-green-700">their turn</span>}
-        </span>
-        <span className="flex shrink-0 gap-3 text-xs">
-          <span title={`${opponent.bank.length} cards in the bank`}>
-            Bank <b>{bankTotal}M</b>
+      <button
+        type="button"
+        data-cy="view-cards"
+        onClick={() => setOpen(true)}
+        className={`block w-full cursor-pointer px-3 text-left hover:bg-primary/40 ${compact ? "py-1" : "py-2"} ${isTheirTurn ? "bg-primary hover:bg-primary" : ""}`}
+      >
+        <span className="flex items-baseline justify-between gap-3">
+          <span className={`min-w-0 truncate font-heading leading-none ${compact ? "text-xl" : "text-2xl"}`}>{opponent.name}</span>
+          <span className={`shrink-0 text-xs ${nearlyWon ? "text-[#f7b36a]" : "text-paper/80"}`}>
+            {nearlyWon ? "1 set from winning" : isTheirTurn ? "Their turn" : compact ? stats : `${complete} complete`}
           </span>
-          <span>{opponent.handCount} in hand</span>
         </span>
-      </header>
 
-      {opponent.properties.length === 0 ? (
-        <div className="grid flex-1 place-items-center text-xs text-black/50">No properties yet</div>
-      ) : (
-        <ul className="flex flex-1 flex-wrap content-start gap-2 overflow-y-auto p-2 [--mini:calc(var(--card-w)*0.55)]">
-          {opponent.properties.map((set) => (
-            <li
-              key={set.cards[0].id}
-              data-cy="opponent-set"
-              data-colour={set.colour}
-              data-count={set.cards.length}
-              data-complete={isComplete(set)}
-              className="w-(--mini)"
-            >
-              <MiniSet set={set} onPreview={(card, flipped) => setPreview({ card, flipped })} />
-            </li>
-          ))}
-        </ul>
-      )}
+        <span className={`block ${compact ? "my-1" : "mt-1.5 mb-1"}`}>
+          <SetMeter sets={opponent.properties} compact={compact} />
+        </span>
 
-      <CardPreview card={preview?.card ?? null} flipped={preview?.flipped} onClose={() => setPreview(null)} />
+        {(!compact || nearlyWon || isTheirTurn) && <span className="block text-xs text-paper/80">{stats}</span>}
+      </button>
+
+      {open && <PlayerCards opponent={opponent} onClose={() => setOpen(false)} />}
     </section>
   );
 }

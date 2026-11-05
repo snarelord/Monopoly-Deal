@@ -2,6 +2,7 @@ import { useState } from "react";
 import { defaultName, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
 import Link from "next/link";
 import HouseRules from "@/components/HouseRules";
+import SetupScreen, { ActionPanel, BLUE_PANEL, ERROR, FIELD, LABEL, PANEL, QUIET_LINK } from "@/components/SetupScreen";
 
 const COUNTS = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
 
@@ -23,15 +24,10 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
   const sameName = new Set(names.map((name) => name.toLowerCase())).size < names.length;
 
   return (
-    <main className="grid min-h-dvh place-items-center p-4">
-      <div
-        data-cy="game-setup"
-        className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
-      >
-        <h1 className="font-heading text-2xl font-bold">Monopoly Deal</h1>
-
-        <fieldset>
-          <legend className="mb-2 text-sm font-semibold">How many players?</legend>
+    <SetupScreen data-cy="game-setup" title="Play local" fit={3.54}>
+      <div className={PANEL}>
+        <fieldset className="min-w-0">
+          <legend className={`${LABEL} mb-3`}>How many players?</legend>
           <div className="flex gap-2">
             {COUNTS.map((n) => (
               <button
@@ -40,8 +36,8 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
                 data-cy={`players-${n}`}
                 aria-pressed={count === n}
                 onClick={() => setCount(n)}
-                className={`flex-1 cursor-pointer rounded border-2 py-2 text-lg font-semibold ${
-                  count === n ? "border-green-700 bg-green-700 text-white" : "border-black/30 hover:border-black"
+                className={`h-12 flex-1 cursor-pointer border-2 font-heading text-3xl ${
+                  count === n ? "border-highlight bg-highlight text-primary" : "border-paper/35 hover:border-paper"
                 }`}
               >
                 {n}
@@ -51,61 +47,65 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
         </fieldset>
 
         {/* HOT-SEAT ONLY: online, each player picks their own name when they join */}
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-semibold">Names</legend>
-          {typed.slice(0, count).map((name, i) => (
-            <input
-              key={i}
-              type="text"
-              data-cy={`name-${i}`}
-              aria-label={`Name for player ${i + 1}`}
-              placeholder={defaultName(i)}
-              maxLength={MAX_NAME_LENGTH}
-              value={name}
-              onChange={(event) => setTyped((t) => t.map((old, j) => (j === i ? event.target.value : old)))}
-              className="rounded border-2 border-black/30 bg-white px-2 py-1 focus:border-black"
-            />
-          ))}
+        <fieldset className="min-w-0">
+          <legend className={`${LABEL} mb-3`}>Names</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {typed.slice(0, count).map((name, i) => (
+              <input
+                key={i}
+                type="text"
+                data-cy={`name-${i}`}
+                aria-label={`Name for player ${i + 1}`}
+                placeholder={defaultName(i)}
+                maxLength={MAX_NAME_LENGTH}
+                value={name}
+                onChange={(event) => setTyped((t) => t.map((old, j) => (j === i ? event.target.value : old)))}
+                className={FIELD}
+              />
+            ))}
+          </div>
           {sameName && (
-            <p data-cy="same-name" className="text-xs text-red-700">
+            <p data-cy="same-name" className={`mt-3 ${ERROR}`}>
               Two players have the same name.
             </p>
           )}
         </fieldset>
 
+        <Link href="/online" data-cy="play-online" className={`mt-auto ${QUIET_LINK}`}>
+          Play online instead
+        </Link>
+      </div>
+
+      <div className={BLUE_PANEL}>
         {/* HOT-SEAT ONLY: online, everyone joins with a room code instead */}
-        <p className="text-xs text-black/60">Everyone plays on this device, passing it round between turns.</p>
-        <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <p>Everyone plays on this device, passing it round between turns.</p>
+        <label className="flex cursor-pointer items-start gap-2">
           <input
             type="checkbox"
             data-cy="pass-screens"
             checked={passScreens}
             onChange={(event) => setPassScreens(event.target.checked)}
-            className="mt-1"
+            className="mt-1 accent-highlight"
           />
           <span>
             Pass the device screens
-            <span className="block text-xs text-black/60">
+            <span className="mt-1 block text-sm text-paper/80">
               Hides each hand until the next player is ready. Turn off when playing on your own.
             </span>
           </span>
         </label>
 
         <HouseRules />
-
-        <button
-          type="button"
-          data-cy="deal"
-          disabled={sameName}
-          onClick={() => onDeal(names, passScreens)}
-          className="cursor-pointer rounded bg-green-700 py-2 text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Deal
-        </button>
-        <Link href="/online" data-cy="play-online" className="text-center text-xs text-black/60 underline">
-          Play online instead
-        </Link>
       </div>
-    </main>
+
+      <ActionPanel
+        type="button"
+        data-cy="deal"
+        disabled={sameName}
+        onClick={() => onDeal(names, passScreens)}
+        hint={`${count} players on one device`}
+        label="Deal"
+      />
+    </SetupScreen>
   );
 }

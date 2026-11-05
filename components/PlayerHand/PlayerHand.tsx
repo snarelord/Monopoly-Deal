@@ -10,7 +10,7 @@ import PlayerCardActions from "./PlayerCardActions"
 import CardPreview from "./CardPreview";
 import StealPicker from "@/components/StealPicker";
 
-const DEFAULT_SPACING = 60;
+const DEFAULT_SPACING = 100;
 const MIN_SPACING = 25;
 const MAX_SPACING = 110;
 const SPACING_STEP = 15;
@@ -21,12 +21,16 @@ export default function PlayerHand({
   opponents,
   names,
   onMove,
+  discardIds,
+  onToggleDiscard,
 }: {
   me: Player;
   turn: TurnStatus;
   opponents: OpponentView[];
   names: string[];
   onMove: (move: Move) => void;
+  discardIds: string[] | null; // cards chosen to discard, null when not discarding
+  onToggleDiscard: (cardId: string) => void;
 }) {
   const [previewCard, setPreviewCard] = useState<CardType | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -66,7 +70,7 @@ export default function PlayerHand({
   const pickingFrom = picking && opponents.find((o) => o.id === picking.choice.targetId);
 
   return (
-    <div className="mb-5">
+    <div className="mb-2">
       <ul
         ref={handRef}
         data-cy="my-hand"
@@ -74,7 +78,8 @@ export default function PlayerHand({
         style={{ "--hand-spacing": spacing / 100 } as CSSProperties}
       >
         {cards.map((card, i) => {
-          const isSelected = card.id === selectedId;
+          const isDiscarding = discardIds !== null;
+          const isSelected = isDiscarding ? discardIds.includes(card.id) : card.id === selectedId;
           return (
             <li key={card.id} className={`hand-slot ${isSelected ? "is-selected" : ""}`}>
               <div className="hand-card">
@@ -82,20 +87,19 @@ export default function PlayerHand({
                   type="button"
                   className="card-button"
                   aria-pressed={isSelected}
-                  onClick={() => setSelectedId(isSelected ? null : card.id)}
+                  onClick={() => (isDiscarding ? onToggleDiscard(card.id) : setSelectedId(isSelected ? null : card.id))}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     setPreviewCard(card);
                   }}
                 >
-                  <Card card={card} className="rounded-lg" />
+                  <Card card={card} className={`rounded-lg ${isDiscarding && isSelected ? "outline-3 outline-offset-1 outline-highlight" : ""}`} />
                 </button>
 
-                {isSelected && (
+                {isSelected && !isDiscarding && (
                   <PlayerCardActions
                     actions={getCardActions(card, {
                       playBlockedReason: turn.playBlockedReason,
-                      canDiscard: turn.mustDiscard,
                       opponents,
                       me,
                       playsLeft: turn.playsLeft,

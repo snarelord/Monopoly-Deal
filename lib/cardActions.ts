@@ -32,7 +32,6 @@ export interface ActionChoice {
 
 export interface ActionContext {
   playBlockedReason: string | null;
-  canDiscard: boolean;
   opponents: OpponentView[];
   me: Player;
   playsLeft: number;
@@ -59,20 +58,12 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
 
   const bank = play({ id: "bank", label: "Place in bank" });
 
-  const discard: CardAction = {
-    id: "discard",
-    label: "Discard",
-    // TODO: also require "my turn is over" once turn phases exist
-    disabled: !ctx.canDiscard,
-    reason: "Only when you have to discard down to 7 at the end of your turn",
-  };
-
   switch (card.type) {
     case "money":
       // pay a player makes sense as a player will action this towards you, and you will choose what cards to pay
-      return [bank, { id: "pay-player", label: "Pay a player", disabled: true}, discard];
+      return [bank, { id: "pay-player", label: "Pay a player", disabled: true}];
     case "property":
-      return [play({ id: "place-property", label: "Place in property pile" }), discard];
+      return [play({ id: "place-property", label: "Place in property pile" })];
     case "wildcard": {
       // the any colour wildcard can only join a set you've already started
       const colours = card.colours === "any" ? openSetColours(ctx.me.properties) : card.colours;
@@ -82,9 +73,9 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
         colours: colours.map((colour) => ({ colour })),
       };
       if (colours.length === 0) {
-        return [{ ...place, disabled: true, reason: "Start a set first, this wildcard can't go down on its own" }, discard];
+        return [{ ...place, disabled: true, reason: "Start a set first, this wildcard can't go down on its own" }];
       }
-      return [play(place), discard];
+      return [play(place)];
     }
     case "rent": {
       const options = rentOptions(ctx.me, card).map((o) => ({ ...o, disabled: o.amount === 0 }));
@@ -104,7 +95,7 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
       const rentAction = options.every((o) => o.disabled)
         ? { ...charge, disabled: true, reason: "You don't have any properties in these colours" }
         : play(charge);
-      return [bank, rentAction, discard];
+      return [bank, rentAction];
     }
     case "action": {
       if (card.action === "house" || card.action === "hotel") {
@@ -117,7 +108,7 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
         const reason = card.action === "house"
           ? "You need a complete set to build on (not railroads or utilities)"
           : "You need a complete set with a house on it";
-        return [bank, colours.length ? play(buildOn) : { ...buildOn, disabled: true, reason }, discard];
+        return [bank, colours.length ? play(buildOn) : { ...buildOn, disabled: true, reason }];
       }
       if (card.action in STEAL_OPTIONS) {
         // only offer players who have something to take
@@ -126,10 +117,10 @@ export function getCardActions(card: Card, ctx: ActionContext): CardAction[] {
           .filter((o) => canSteal(kind, o.properties, ctx.me.properties))
           .map((o) => o.id);
         const steal: CardAction = { id: "play-on-player", label: STEAL_OPTIONS[kind].label, targets, pick: kind };
-        return [bank, targets.length ? play(steal) : { ...steal, disabled: true, reason: STEAL_OPTIONS[kind].reason }, discard];
+        return [bank, targets.length ? play(steal) : { ...steal, disabled: true, reason: STEAL_OPTIONS[kind].reason }];
       }
       const option = playOption(card.action, ctx.opponents.map((o) => o.id));
-      return [bank, ...(option ? [play(option)] : []), discard];
+      return [bank, ...(option ? [play(option)] : [])];
     }
   }
 }
@@ -140,7 +131,6 @@ export function toMove(card: Card, actionId: CardActionId, choice: ActionChoice 
   switch (actionId) {
     case "bank":
     case "play":
-    case "discard":
       return { type: actionId, cardId };
     case "place-property":
       return { type: "place-property", cardId, colour: choice.colour };

@@ -18,7 +18,7 @@ const playToProperties = (id: string) => {
 };
 
 describe("Property pile", () => {
-  beforeEach(() => cy.visit(`/?seed=${seed}`));
+  beforeEach(() => cy.visit(`/local?seed=${seed}`));
 
   it("starts empty", () => {
     cy.get(pile).should("have.attr", "data-count", "0");

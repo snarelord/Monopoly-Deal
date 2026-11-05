@@ -1,6 +1,6 @@
 describe("Player hand", () => {
   beforeEach(() => {
-    cy.visit("/?players=2");
+    cy.visit("/local?players=2");
   });
 
   it("starts with five cards", () => {

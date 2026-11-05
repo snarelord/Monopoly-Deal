@@ -5,14 +5,14 @@ export default function GameLog({ log, viewerId, names }: { log: LogEntry[]; vie
   const recent = log.map((entry, index) => ({ entry, index })).slice(-50).reverse(); // newest first
 
   return (
-    <section data-cy="game-log" className="flex h-full min-h-0 w-full flex-col rounded-lg border border-black/20 bg-white/60 text-black">
-      <header className="font-heading border-b border-black/10 px-3 py-1.5 text-sm font-semibold">Game log</header>
+    <section data-cy="game-log" className="flex min-h-0 w-full flex-col border-t border-paper/35 px-3 pt-2">
+      <header className="mb-1 font-heading text-xl leading-none">Game log</header>
       {recent.length === 0 ? (
-        <p className="p-3 text-xs text-black/50">Nothing yet</p>
+        <p className="text-xs text-paper/80">Nothing yet</p>
       ) : (
-        <ol className="min-h-0 flex-1 overflow-y-auto px-3 py-1 text-xs">
+        <ol className="min-h-0 flex-1 overflow-y-auto text-xs text-paper/90">
           {recent.map(({ entry, index }) => (
-            <li key={index} data-cy="log-entry" data-kind={entry.kind} className="border-b border-black/5 py-1 last:border-0">
+            <li key={index} data-cy="log-entry" data-kind={entry.kind} className="border-b border-paper/15 py-1 last:border-0">
               {describeEntry(entry, viewerId, names)}
             </li>
           ))}

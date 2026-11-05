@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { leaveRoom, startGame } from "@/app/online/actions";
+import { ActionPanel, ERROR, QUIET_LINK } from "@/components/SetupScreen";
 
 export function CopyLinkButton() {
   const [copied, setCopied] = useState(false);
@@ -18,7 +19,7 @@ export function CopyLinkButton() {
           // the browser blocked it. the code is on screen anyway
         }
       }}
-      className="cursor-pointer rounded border-2 border-black/30 py-1.5 text-sm hover:border-black"
+      className="h-12 w-full cursor-pointer border-2 border-paper/35 font-heading text-2xl hover:border-paper"
     >
       {copied ? "Link copied" : "Copy invite link"}
     </button>
@@ -47,22 +48,22 @@ export function StartButton({ code, canStart }: { code: string; canStart: boolea
   }
 
   return (
-    <>
-      <button
+    <div className="flex min-w-0 flex-col">
+      <ActionPanel
         type="button"
         data-cy="start-game"
         disabled={busy || !canStart}
         onClick={start}
-        className="cursor-pointer rounded bg-green-700 py-2 text-white disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Start the game
-      </button>
+        hint="Deals the cards for everyone"
+        label="Start the game"
+        className="flex-1"
+      />
       {error && (
-        <p data-cy="start-error" role="alert" className="text-sm text-red-700">
+        <p data-cy="start-error" role="alert" className={`bg-primary p-3 ${ERROR}`}>
           {error}
         </p>
       )}
-    </>
+    </div>
   );
 }
 
@@ -93,12 +94,12 @@ export function LeaveButton({ code, isHost }: { code: string; isHost: boolean })
         data-cy="leave-room"
         disabled={busy}
         onClick={leave}
-        className="cursor-pointer self-start text-sm text-red-700 underline disabled:opacity-40"
+        className={`mt-auto cursor-pointer disabled:opacity-40 ${QUIET_LINK}`}
       >
         {isHost ? "Close the room" : "Leave the room"}
       </button>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className={ERROR}>
           {error}
         </p>
       )}

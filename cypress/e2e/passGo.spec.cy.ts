@@ -58,7 +58,7 @@ describe("Pass Go in the hand", () => {
   const seed = findSeed((hand) => hand.some(isPassGo));
 
   it("swaps the card for two new ones", () => {
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards(); // 7 cards
 
     cy.get('[data-cy="my-hand"] [data-card-id^="pass-go-"]').first().click({ force: true });

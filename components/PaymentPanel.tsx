@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { Card as CardType, Move, Player } from "@/lib/types";
 import { autoPay, cardsTotal, payableCards } from "@/lib/payment";
-import Card from "@/components/Card";
+import Banner from "@/components/Banner";
+import CardChoice from "@/components/CardChoice";
+import MomentScreen from "@/components/MomentScreen";
+import { ActionPanel, LABEL, STEP_LABEL, STEP_PANEL } from "@/components/SetupScreen";
 
 interface PaymentPanelProps {
   me: Player;
@@ -20,7 +23,8 @@ export default function PaymentPanel({ me, amount, toName, onMove }: PaymentPane
   const buildings = onTable.filter((c) => c.type === "action");
   const total = cardsTotal(payable.filter((c) => selected.includes(c.id)));
   // no change given, so it has to cover the amount, unless it's everything you've got
-  const canPay = total >= amount || (selected.length > 0 && selected.length === payable.length);
+  const everything = selected.length > 0 && selected.length === payable.length;
+  const canPay = total >= amount || everything;
 
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -28,75 +32,72 @@ export default function PaymentPanel({ me, amount, toName, onMove }: PaymentPane
   const cardGroup = (title: string, cards: CardType[]) =>
     cards.length > 0 && (
       <section>
-        <div className="mb-1 text-xs font-semibold">{title}</div>
-        <ul className="flex flex-wrap gap-2">
-          {cards.map((card) => {
-            const isSelected = selected.includes(card.id);
-            return (
-              <li key={card.id}>
-                <button
-                  type="button"
-                  data-cy="pay-card"
-                  data-selected={isSelected}
-                  aria-pressed={isSelected}
-                  onClick={() => toggle(card.id)}
-                  className={`block w-[calc(var(--card-w)*0.8)] cursor-pointer rounded-md transition-transform ${
-                    isSelected ? "outline-3 outline-green-600" : "opacity-80 hover:opacity-100"
-                  }`}
-                >
-                  <Card card={card} className="rounded-md" />
-                </button>
-              </li>
-            );
-          })}
+        <h2 className={`${LABEL} mb-3`}>{title}</h2>
+        <ul className="flex flex-wrap gap-3">
+          {cards.map((card) => (
+            <li key={card.id}>
+              <CardChoice card={card} selected={selected.includes(card.id)} onClick={() => toggle(card.id)} dataCy="pay-card" />
+            </li>
+          ))}
         </ul>
       </section>
     );
 
+  const note =
+    total > amount
+      ? `That's ${total - amount}M over, and you won't get change.`
+      : everything && total < amount
+        ? "That's everything you've got."
+        : null;
+
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4">
-      <div
-        data-cy="payment-panel"
-        role="dialog"
-        aria-label={`Pay ${toName}`}
-        className="flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
+    <MomentScreen
+      data-cy="payment-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Pay ${toName}`}
+      banner={
+        <Banner title={`Pay ${toName}`} accent={`${amount}M`}>
+          No change is given
+        </Banner>
+      }
+    >
+      <aside
+        aria-label="Your payment"
+        className="flex min-w-0 flex-col gap-3 bg-secondary px-(--gutter) py-4 lg:col-start-2 lg:row-start-1"
       >
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-heading text-lg font-semibold">
-            Pay {toName} {amount}M
-          </h2>
-          <span data-cy="pay-total" data-total={total} className={total >= amount ? "text-green-700" : ""}>
-            Selected: {total}M
-          </span>
-        </div>
-        <p className="text-xs text-black/60">No change is given. Click cards to choose what to pay with.</p>
+        <h2 className={LABEL}>Paying</h2>
+        <p data-cy="pay-total" data-total={total} className="font-heading text-7xl leading-[0.9]">
+          {total}M <span className="text-3xl text-paper/80">of {amount}M</span>
+        </p>
+        {note && <p className="text-sm text-[#f7b36a]">{note}</p>}
+        <button
+          type="button"
+          data-cy="pay-auto"
+          onClick={() => onMove({ type: "pay", cardIds: autoPay(me, amount) })}
+          className="mt-auto h-12 cursor-pointer border-2 border-paper/35 font-heading text-2xl hover:border-paper"
+        >
+          Pay automatically
+        </button>
+      </aside>
 
-        <div className="flex flex-col gap-3 overflow-y-auto p-2">
-          {cardGroup("Bank", bank)}
-          {cardGroup("Properties", properties)}
-          {cardGroup("Buildings", buildings)}
-        </div>
+      <div className="min-w-0 px-(--gutter) pt-4 pb-2 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:pb-5">{cardGroup("Bank", bank)}</div>
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            data-cy="pay-auto"
-            onClick={() => onMove({ type: "pay", cardIds: autoPay(me, amount) })}
-            className="cursor-pointer rounded border-2 border-black px-3 py-1"
-          >
-            Pay automatically
-          </button>
-          <button
-            type="button"
-            data-cy="pay-submit"
-            disabled={!canPay}
-            onClick={() => onMove({ type: "pay", cardIds: selected })}
-            className="cursor-pointer rounded bg-green-700 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Pay {total}M
-          </button>
-        </div>
+      <div className="flex min-w-0 flex-col gap-5 px-(--gutter) py-4 lg:col-start-1 lg:row-start-1">
+        {cardGroup("Properties", properties)}
+        {cardGroup("Buildings", buildings)}
       </div>
-    </div>
+
+      <ActionPanel
+        type="button"
+        data-cy="pay-submit"
+        disabled={!canPay}
+        onClick={() => onMove({ type: "pay", cardIds: selected })}
+        hint={canPay ? `${selected.length} ${selected.length === 1 ? "card" : "cards"} chosen` : `Choose ${amount - total}M more`}
+        label={`Pay ${total}M`}
+        labelClassName={STEP_LABEL}
+        className={`${STEP_PANEL} lg:col-start-3 lg:row-span-2 lg:row-start-1`}
+      />
+    </MomentScreen>
   );
 }

@@ -3,13 +3,7 @@ import type { Card as CardType } from "@/lib/types";
 import Card from "@/components/Card";
 import CardPreview from "./CardPreview";
 
-/*
-  PLANNED: viewing another player's bank
-  - clicking an opponent's bank total in their panel (see GameBoard) opens this component for them, read only:
-    no menus, but right click to preview still works
-  - needs a prop to say whose bank it is (the heading becomes "Sam's bank", from their name) and to turn the menus off
-  - when paying gets built into the board rather than the PaymentPanel modal, the same cards could become selectable here
-*/
+// PLANNED: when paying gets built into the board rather than the PaymentPanel modal, these cards could become selectable here
 interface PlayerBankProps {
   playerId: number;
   cards: CardType[];
@@ -24,15 +18,15 @@ export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
       data-cy={`bank-${playerId}`}
       data-count={cards.length}
       data-total={total}
-      className="flex h-full w-full flex-col rounded-lg border border-black/20 bg-white/60 p-3 text-black"
+      className="flex h-full w-full flex-col"
     >
-      <div className="font-heading mb-2 flex justify-between text-sm font-semibold">
+      <div className="mb-2 flex justify-between font-heading text-2xl leading-none">
         <span>Bank</span>
         <span>{total}M</span>
       </div>
 
       {cards.length === 0 ? (
-        <div className="grid flex-1 place-items-center rounded border-2 border-black/30 text-xs">
+        <div className="grid min-h-16 flex-1 place-items-center border-2 border-dashed border-paper/20 text-sm text-paper/70">
           Empty
         </div>
       ) : (

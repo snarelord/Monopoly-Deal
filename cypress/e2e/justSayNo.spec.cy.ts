@@ -170,7 +170,7 @@ describe("Just Say No in the game", () => {
   });
 
   it("cancels a debt collector and hands back to the player whose turn it is", () => {
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     takeSeat();

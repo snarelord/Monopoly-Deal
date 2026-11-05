@@ -10,8 +10,8 @@ const bebasNeue = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--f
 const inter = Inter({ weight: "400", subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Monopoly Deal",
-  description: "Free online Monopoly Deal",
+  title: "[Deal]",
+  description: "A MULTIPLAYER PROPERTY CARD GAME",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

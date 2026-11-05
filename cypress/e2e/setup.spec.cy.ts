@@ -5,7 +5,7 @@ const opponents = '[data-cy^="opponent-"]:not([data-cy="opponent-set"])';
 
 describe("Choosing the number of players", () => {
   it("opens on the setup screen and deals for the number chosen", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="game-setup"]').should("exist");
     cy.get('[data-cy="players-4"]').click();
     cy.get('[data-cy="deal"]').click();
@@ -16,19 +16,19 @@ describe("Choosing the number of players", () => {
   });
 
   it("deals straight away with ?players=", () => {
-    cy.visit("/?players=3");
+    cy.visit("/local?players=3");
     cy.get('[data-cy="game-setup"]').should("not.exist");
     cy.get(opponents).should("have.length", 2);
   });
 
   it("keeps the last choice when dealing again", () => {
-    cy.visit("/?players=3");
+    cy.visit("/local?players=3");
     cy.get('[data-cy="new-game"]').click();
     cy.get('[data-cy="players-3"]').should("have.attr", "aria-pressed", "true");
   });
 
   it("passes the turn round everyone before the next round", () => {
-    cy.visit("/?players=3&seed=1");
+    cy.visit("/local?players=3&seed=1");
     for (const next of ["1", "2", "0"]) {
       drawCards();
       cy.get('[data-cy="end-turn"]').click();
@@ -39,7 +39,7 @@ describe("Choosing the number of players", () => {
   });
 
   it("skips the pass screens when they're turned off, and remembers that", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="pass-screens"]').should("be.checked").uncheck();
     cy.get('[data-cy="deal"]').click();
 
@@ -53,7 +53,7 @@ describe("Choosing the number of players", () => {
   });
 
   it("uses the names typed in, and the default for any left blank", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="players-3"]').click();
     cy.get('[data-cy="name-0"]').type("Kit");
     cy.get('[data-cy="name-1"]').type("  Sam  ");
@@ -70,7 +70,7 @@ describe("Choosing the number of players", () => {
   });
 
   it("keeps typed names when the player count changes", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="players-3"]').click();
     cy.get('[data-cy="name-2"]').type("Jo");
     cy.get('[data-cy="players-2"]').click();
@@ -80,7 +80,7 @@ describe("Choosing the number of players", () => {
   });
 
   it("won't deal when two players have the same name", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="name-0"]').type("Kit");
     cy.get('[data-cy="name-1"]').type("kit");
     cy.get('[data-cy="same-name"]').should("exist");
@@ -91,7 +91,7 @@ describe("Choosing the number of players", () => {
   });
 
   it("skips the pass screens with ?hotseat=open", () => {
-    cy.visit("/?players=2&hotseat=open");
+    cy.visit("/local?players=2&hotseat=open");
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     cy.get('[data-cy="pass-screen"]').should("not.exist");
@@ -101,7 +101,7 @@ describe("Choosing the number of players", () => {
 
 describe("House rules", () => {
   it("lists the options, greyed out until the feature is turned on", () => {
-    cy.visit("/");
+    cy.visit("/local");
     cy.get('[data-cy="house-rules"] summary').click();
     cy.get('[data-cy="rule-win-three-sets"]').should("be.checked");
     cy.get('[data-cy="house-rules"] input').should("have.length", 13);

@@ -24,7 +24,7 @@ export default function FanControls({
     });
   }
   return (
-  <div className="flex justify-center items-center gap-6 mt-4">
+  <div className="mt-2 flex items-center justify-center gap-6">
     <button
       type="button"
       data-cy="fan-decrease"
@@ -35,7 +35,7 @@ export default function FanControls({
     >
       <FontAwesomeIcon
         icon={faArrowLeft}
-        className="text-black cursor-pointer"
+        className="cursor-pointer text-paper"
       />
     </button>
     <button
@@ -48,7 +48,7 @@ export default function FanControls({
     >
       <FontAwesomeIcon
         icon={faArrowRight}
-        className="text-black cursor-pointer"
+        className="cursor-pointer text-paper"
       />
     </button>
   </div>

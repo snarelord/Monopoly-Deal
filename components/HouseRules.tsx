@@ -35,10 +35,10 @@ export default function HouseRules() {
   const change = (update: Partial<Rules>) => setRules((r) => ({ ...r, ...update }));
 
   return (
-    <details data-cy="house-rules" className="rounded border-2 border-black/20 bg-white/60 px-3 py-2">
-      <summary className="cursor-pointer text-sm font-semibold">
-        House rules
-        {!CUSTOMISE_RULES_FEATURE && <span className="ml-2 text-xs font-normal text-black/60">Coming soon</span>}
+    <details data-cy="house-rules" className="border-t border-paper/35 pt-4">
+      <summary className="cursor-pointer">
+        <span className="font-heading text-2xl leading-none">House rules</span>
+        {!CUSTOMISE_RULES_FEATURE && <span className="ml-2 text-xs text-paper/80">Coming soon</span>}
       </summary>
 
       {/* a disabled fieldset disables every control inside it */}
@@ -132,7 +132,7 @@ export default function HouseRules() {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 text-xs font-semibold tracking-wide text-black/60 uppercase">{title}</legend>
+      <legend className="mb-1 text-xs tracking-wide text-paper/80 uppercase">{title}</legend>
       {children}
     </fieldset>
   );
@@ -143,7 +143,7 @@ const option = "flex cursor-pointer items-start gap-2 text-sm has-disabled:curso
 function Choice(props: { name: string; cy: string; checked: boolean; onPick: () => void; children: ReactNode }) {
   return (
     <label className={option}>
-      <input type="radio" name={props.name} data-cy={props.cy} checked={props.checked} onChange={props.onPick} className="mt-1" />
+      <input type="radio" name={props.name} data-cy={props.cy} checked={props.checked} onChange={props.onPick} className="mt-1 accent-highlight" />
       <span>{props.children}</span>
     </label>
   );
@@ -158,7 +158,7 @@ function Toggle(props: { cy: string; checked: boolean; disabled?: boolean; onTog
         checked={props.checked}
         disabled={props.disabled}
         onChange={(event) => props.onToggle(event.target.checked)}
-        className="mt-1"
+        className="mt-1 accent-highlight"
       />
       <span>{props.children}</span>
     </label>
@@ -166,5 +166,5 @@ function Toggle(props: { cy: string; checked: boolean; disabled?: boolean; onTog
 }
 
 function Hint({ children }: { children: ReactNode }) {
-  return <span className="block text-xs text-black/60">{children}</span>;
+  return <span className="block text-xs text-paper/80">{children}</span>;
 }

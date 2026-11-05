@@ -149,7 +149,7 @@ describe("Debt Collector in the game", () => {
   });
 
   it("hands over to the player who owes, then back once they've paid", () => {
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     takeSeat();

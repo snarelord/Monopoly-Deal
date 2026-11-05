@@ -138,7 +138,7 @@ function runMove(game: GameState, actorId: number, move: Move): MoveResult {
     case "place-property":
       return playToProperties(game, actorId, move.cardId, move.colour);
     case "discard":
-      return discardCard(game, actorId, move.cardId);
+      return discardCards(game, actorId, move.cardIds);
     case "rent":
       return chargeRent(game, actorId, move.cardId, move.colour, move.targetId, move.doubleRentIds ?? []);
     case "build":
@@ -694,18 +694,27 @@ function endTurn(game: GameState): MoveResult {
   return ok(advanceTurn(game));
 }
 
-function discardCard(game: GameState, playerId: number, cardId: string): MoveResult {
+function discardCards(game: GameState, playerId: number, cardIds: string[]): MoveResult {
   if (!game.mustDiscard) return fail("You only discard when you end your turn with more than 7 cards");
 
   const player = game.players[game.currentPlayerIndex];
-  const card = player.hand.find((c) => c.id === cardId);
-  if (!card) return fail("That card isn't in your hand");
+  const cards = [...new Set(cardIds)].map((id) => player.hand.find((c) => c.id === id));
+  if (cards.some((card) => !card)) return fail("That card isn't in your hand");
+  const extra = player.hand.length - HAND_LIMIT;
+  if (cards.length !== extra) return fail(`Discard exactly ${extra} card${extra === 1 ? "" : "s"}`);
 
-  const next = logged({
-    ...game,
-    players: updatePlayer(game, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, cardId) })),
-    discardPile: [...game.discardPile, card],
-  }, { kind: "discarded", playerId, card });
+  const next = (cards as Card[]).reduce(
+    (state, card) =>
+      logged(
+        {
+          ...state,
+          players: updatePlayer(state, playerId, (p) => ({ ...p, hand: withoutCard(p.hand, card.id) })),
+          discardPile: [...state.discardPile, card],
+        },
+        { kind: "discarded", playerId, card },
+      ),
+    game,
+  );
 
-  return ok(player.hand.length - 1 <= HAND_LIMIT ? advanceTurn(next) : next);
+  return ok(advanceTurn(next));
 }

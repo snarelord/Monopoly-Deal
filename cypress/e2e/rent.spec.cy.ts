@@ -152,7 +152,7 @@ describe("Rent in the game", () => {
 
   it("charges the other player rent for a property you own", () => {
     const { seed, rentCard, property } = found;
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
 
     // player 1 puts the property down
     drawCards();

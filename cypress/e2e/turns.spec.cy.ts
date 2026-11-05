@@ -11,7 +11,7 @@ const bankFirstCard = () => {
 };
 
 describe("Turns", () => {
-  beforeEach(() => cy.visit(`/?seed=${seed}`));
+  beforeEach(() => cy.visit(`/local?seed=${seed}`));
 
   it("starts on round 1, turn 1 with three plays", () => {
     cy.get(info).should("have.attr", "data-round", "1")
@@ -21,10 +21,16 @@ describe("Turns", () => {
   });
 
   it("makes me draw before I can play or end my turn", () => {
-    cy.get('[data-cy="end-turn"]').should("be.disabled");
+    cy.get('[data-cy="end-turn"]').should("not.exist");
     cy.get('[data-cy="my-hand"] [data-cy="card"]').first().click({ force: true });
-    cy.get('[data-cy="card-actions"] button[data-cy^="action-"]:not([data-cy="action-discard"])')
+    cy.get('[data-cy="card-actions"] button[data-cy^="action-"]')
       .each(($button) => expect($button).to.be.disabled);
+  });
+
+  it("shows the next step in the orange block: draw, then end the turn", () => {
+    cy.get('[data-cy="draw-step"]').click();
+    cy.get('[data-cy="draw-step"]').should("not.exist");
+    cy.get('[data-cy="end-turn"]').should("not.be.disabled");
   });
 
   it("only lets me draw once a turn", () => {
@@ -44,7 +50,7 @@ describe("Turns", () => {
     cy.get(info).should("have.attr", "data-plays-left");
 
     cy.get('[data-cy="my-hand"] [data-cy="card"]').first().click({ force: true });
-    cy.get('[data-cy="card-actions"] button[data-cy^="action-"]:not([data-cy="action-discard"])')
+    cy.get('[data-cy="card-actions"] button[data-cy^="action-"]')
       .each(($button) => expect($button).to.be.disabled);
   });
 
@@ -72,12 +78,12 @@ describe("Turns", () => {
     endTurn();
 
     cy.get('[data-cy="discard-prompt"]').should("contain.text", "Discard 2 cards");
-    cy.get('[data-cy="end-turn"]').should("be.disabled");
-    cy.get('[data-cy="my-hand"] [data-cy="card"]').first().click({ force: true });
-    cy.get('[data-cy="action-discard"]').click();
-    cy.get('[data-cy="discard-prompt"]').should("contain.text", "Discard 1 card");
-    cy.get('[data-cy="my-hand"] [data-cy="card"]').first().click({ force: true });
-    cy.get('[data-cy="action-discard"]').click();
+    cy.get('[data-cy="end-turn"]').should("not.exist");
+    cy.get('[data-cy="discard-step"]').should("be.disabled");
+    cy.get('[data-cy="my-hand"] [data-cy="card"]').eq(0).click({ force: true });
+    cy.get('[data-cy="discard-step"]').should("be.disabled");
+    cy.get('[data-cy="my-hand"] [data-cy="card"]').eq(1).click({ force: true });
+    cy.get('[data-cy="discard-step"]').click();
     cy.get(info).should("have.attr", "data-player", "1").and("have.attr", "data-turn", "4");
   });
 });

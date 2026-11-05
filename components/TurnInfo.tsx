@@ -1,43 +1,49 @@
+import Link from "next/link";
+import Banner from "@/components/Banner";
+import { QUIET_LINK } from "@/components/SetupScreen";
 import { PLAYS_PER_TURN, type TurnStatus } from "../lib/gameHelpers";
 
-export default function TurnInfo({ turn, names, moveError }: { turn: TurnStatus; names: string[]; moveError: string | null }) {
+interface TurnInfoProps {
+  turn: TurnStatus;
+  title: string;
+  accent?: string;
+  tail?: string;
+  onNewGame?: () => void;
+}
+
+export default function TurnInfo({ turn, title, accent, tail, onNewGame }: TurnInfoProps) {
+  const pips = Array.from({ length: PLAYS_PER_TURN }, (_, i) => i < turn.playsLeft);
+
   return (
-    <div
+    <Banner
       data-cy="turn-info"
       data-player={turn.currentPlayerId}
       data-turn={turn.turnNumber}
       data-round={turn.round}
       data-plays-left={turn.playsLeft}
-      className="rounded-lg border border-black/20 bg-white/70 px-3 py-2 text-sm text-black"
+      title={title}
+      accent={accent}
+      tail={tail}
     >
-      <div className="font-heading truncate font-semibold">{names[turn.currentPlayerId]}&apos;s turn</div>
-      <div>Round {turn.round} · Turn {turn.turnNumber}</div>
-      <div>Plays left: {turn.playsLeft}/{PLAYS_PER_TURN}</div>
-      {turn.winnerId !== null && (
-        <div data-cy="winner" className="mt-1 font-semibold text-green-700">
-          {names[turn.winnerId]} wins!
-        </div>
+      <span>
+        Round {turn.round} · Turn {turn.turnNumber}
+      </span>
+      <span className="flex items-center gap-2">
+        {pips.map((left, i) => (
+          <span key={i} className={`size-4 border-2 ${left ? "border-highlight bg-highlight" : "border-paper/35"}`} />
+        ))}
+        <span className="ml-1">{turn.playsLeft === 1 ? "1 play left" : `${turn.playsLeft} plays left`}</span>
+      </span>
+      {onNewGame && (
+        <button type="button" data-cy="new-game" onClick={onNewGame} className="cursor-pointer py-2 underline hover:text-highlight">
+          Deal again
+        </button>
       )}
-      {turn.mustDiscard && (
-        <div data-cy="discard-prompt" className="mt-1 font-semibold text-red-700">
-          Discard {turn.cardsToDiscard} card{turn.cardsToDiscard === 1 ? "" : "s"}
-        </div>
+      {!onNewGame && turn.winnerId !== null && (
+        <Link href="/" className={QUIET_LINK}>
+          Back to menu
+        </Link>
       )}
-      {turn.owing.map((debt) => (
-        <div key={debt.playerId} data-cy="owing" data-status={debt.status} className="mt-1 font-semibold text-amber-700">
-          {/* the same words whether or not anyone holds a just say no */}
-          {debt.status === "countering"
-            ? `${names[debt.playerId]} said no. Waiting on ${names[debt.toPlayerId]}`
-            : debt.status === "responding"
-              ? `Waiting on ${names[debt.playerId]} to answer the ${turn.pendingCard?.name}`
-              : `${names[debt.playerId]} owes ${names[debt.toPlayerId]} ${debt.amount}M`}
-        </div>
-      ))}
-      {moveError && (
-        <div data-cy="move-error" className="mt-1 text-red-700">
-          {moveError}
-        </div>
-      )}
-    </div>
+    </Banner>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import SetupScreen, { ActionPanel, BLUE_PANEL, ERROR, FIELD, LABEL, PANEL } from "@/components/SetupScreen";
 import { MAX_NAME_LENGTH } from "@/lib/gameHelpers";
 import { ensureSignedIn } from "@/lib/supabase/signIn";
 import { joinRoom } from "@/app/online/actions";
@@ -31,38 +32,47 @@ export default function JoinForm({ code, hostName }: { code: string; hostName?: 
   }
 
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        join();
-      }}
+    <SetupScreen
+      title={
+        <>
+          Join <span className="text-highlight">{code}</span>
+        </>
+      }
+      fit={3.7}
     >
-      <h1 className="font-heading text-2xl font-bold wrap-break-word">{hostName ? `Join ${hostName}'s room` : `Join room ${code}`}</h1>
-      <label className="flex flex-col gap-1 text-sm font-semibold">
-        Your name
-        <input
-          type="text"
-          data-cy="join-name"
-          maxLength={MAX_NAME_LENGTH}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className="rounded border-2 border-black/30 bg-white px-2 py-1 font-normal focus:border-black"
-        />
-      </label>
-      <button
-        type="submit"
-        data-cy="join-submit"
-        disabled={busy}
-        className="cursor-pointer rounded bg-green-700 py-2 text-white disabled:cursor-not-allowed disabled:opacity-40"
+      {/* contents, so the panels inside still sit in the screen's grid */}
+      <form
+        className="contents"
+        onSubmit={(event) => {
+          event.preventDefault();
+          join();
+        }}
       >
-        Join
-      </button>
-      {error && (
-        <p data-cy="join-error" role="alert" className="text-sm text-red-700">
-          {error}
-        </p>
-      )}
-    </form>
+        <div className={PANEL}>
+          <label className="flex flex-col gap-3">
+            <span className={LABEL}>Your name</span>
+            <input
+              type="text"
+              data-cy="join-name"
+              maxLength={MAX_NAME_LENGTH}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className={FIELD}
+            />
+          </label>
+          {error && (
+            <p data-cy="join-error" role="alert" className={ERROR}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className={BLUE_PANEL}>
+          <p className="wrap-break-word">{hostName ? `You're joining ${hostName}'s room.` : `You're joining room ${code}.`}</p>
+        </div>
+
+        <ActionPanel type="submit" data-cy="join-submit" disabled={busy} hint="Pick a name and you're in" label="Join" />
+      </form>
+    </SetupScreen>
   );
 }

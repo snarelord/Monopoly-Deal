@@ -154,7 +154,7 @@ describe("Wildcards in the property pile", () => {
   const seed = findSeed((hand) => hand.some(isTwoColourWild));
 
   const placeWildAs = (pick: 0 | 1) => {
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards();
     cy.get('[data-cy="my-hand"] [data-card-id^="wildcard-"]')
       .not('[data-card-id^="wildcard-any"]')

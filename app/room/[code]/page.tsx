@@ -6,6 +6,7 @@ import { tidyCode } from "@/lib/roomCode";
 import { getGame, getLobby, type Lobby } from "@/lib/rooms";
 import { getUserId } from "@/lib/supabase/server";
 import HouseRules from "@/components/HouseRules";
+import SetupScreen, { ACTION_LABEL, ACTION_PANEL, BLUE_PANEL, LABEL, PANEL, QUIET_LINK } from "@/components/SetupScreen";
 import JoinForm from "./JoinForm";
 import { CopyLinkButton, LeaveButton, StartButton } from "./LobbyButtons";
 import OnlineGame from "./OnlineGame";
@@ -16,9 +17,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     // the code, the cookie and the database are only known when someone visits so this part waits for them
     <Suspense
       fallback={
-        <Panel>
-          <p className="text-sm text-black/60">Loading the room…</p>
-        </Panel>
+        <Message title="Loading" fit={2.58}>
+          <p>Loading the room…</p>
+        </Message>
       }
     >
       <Room params={params} />
@@ -26,16 +27,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   );
 }
 
-function Panel({ children, ...props }: { children: ReactNode; "data-cy"?: string }) {
+function Message({ title, fit, children, ...props }: { title: string; fit: number; children: ReactNode; "data-cy"?: string }) {
   return (
-    <main className="grid min-h-dvh place-items-center p-4">
-      <div
-        {...props}
-        className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
-      >
-        {children}
-      </div>
-    </main>
+    <SetupScreen title={title} fit={fit} {...props}>
+      <div className={`${PANEL} lg:col-span-full`}>{children}</div>
+    </SetupScreen>
   );
 }
 
@@ -55,13 +51,12 @@ async function Room({ params }: { params: Promise<{ code: string }> }) {
 
 function NoRoom({ code }: { code: string }) {
   return (
-    <Panel data-cy="no-room">
-      <h1 className="font-heading text-2xl font-bold">No room {code}</h1>
-      <p className="text-sm">Check the code. The room may also have closed when its host left.</p>
-      <Link href="/online" className="text-sm underline">
+    <Message data-cy="no-room" title="No room" fit={2.75}>
+      <p className="wrap-anywhere">There&apos;s no room {code}. Check the code. The room may also have closed when its host left.</p>
+      <Link href="/online" className={QUIET_LINK}>
         Create or join a room
       </Link>
-    </Panel>
+    </Message>
   );
 }
 
@@ -70,14 +65,11 @@ function RoomView({ code, userId, lobby }: { code: string; userId: string | null
   const mine = lobby.players.find((p) => p.user_id === userId);
 
   if (!mine) {
+    if (lobby.status === "lobby") return <JoinForm code={code} hostName={host?.display_name} />;
     return (
-      <Panel>
-        {lobby.status === "lobby" ? (
-          <JoinForm code={code} hostName={host?.display_name} />
-        ) : (
-          <p className="text-sm">This game has already started.</p>
-        )}
-      </Panel>
+      <Message title="Too late" fit={2.77}>
+        <p>This game has already started.</p>
+      </Message>
     );
   }
 
@@ -85,43 +77,61 @@ function RoomView({ code, userId, lobby }: { code: string; userId: string | null
 
   const isHost = userId === lobby.host_id;
   return (
-    <Panel data-cy="lobby">
-      <div>
-        <p className="text-xs font-semibold tracking-wide text-black/60 uppercase">Room code</p>
-        <p data-cy="lobby-code" className="text-4xl font-bold tracking-widest">
-          {code}
+    <SetupScreen
+      data-cy="lobby"
+      title={
+        <>
+          Room{" "}
+          <span data-cy="lobby-code" className="text-highlight">
+            {code}
+          </span>
+        </>
+      }
+      fit={4.16}
+    >
+      <div className={PANEL}>
+        <div>
+          <h2 className={`${LABEL} mb-3`}>Players</h2>
+          <ol>
+            {lobby.players.map((p) => (
+              <li
+                key={p.seat}
+                data-cy="lobby-player"
+                className="flex items-baseline justify-between gap-2 border-t border-paper/20 py-2"
+              >
+                <span className="truncate">
+                  {p.display_name}
+                  {p.user_id === userId && " (you)"}
+                </span>
+                {p.user_id === lobby.host_id && <span className="shrink-0 text-sm text-paper/80">host</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <p className="text-sm text-paper/80">
+          {lobby.players.length} of {MAX_PLAYERS} players.
+          {isHost &&
+            (lobby.players.length < MIN_PLAYERS ? " Share the code. You can start once someone joins." : " Start when everyone's in.")}
         </p>
+
+        <LeaveButton code={code} isHost={isHost} />
       </div>
-      <CopyLinkButton />
 
-      <ol className="flex flex-col gap-1">
-        {lobby.players.map((p) => (
-          <li
-            key={p.seat}
-            data-cy="lobby-player"
-            className="flex items-baseline justify-between gap-2 rounded border border-black/10 bg-white px-3 py-1.5"
-          >
-            <span className="truncate">
-              {p.display_name}
-              {p.user_id === userId && " (you)"}
-            </span>
-            {p.user_id === lobby.host_id && <span className="shrink-0 text-xs text-black/60">host</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="text-xs text-black/60">
-        {lobby.players.length} of {MAX_PLAYERS} players.{" "}
-        {isHost
-          ? lobby.players.length < MIN_PLAYERS
-            ? "Share the code. You can start once someone joins."
-            : "Start when everyone's in."
-          : `Waiting for ${host?.display_name} to start.`}
-      </p>
+      <div className={BLUE_PANEL}>
+        <CopyLinkButton />
+        {isHost && <HouseRules />}
+      </div>
 
-      {isHost && <HouseRules />}
-      {isHost && <StartButton code={code} canStart={lobby.players.length >= MIN_PLAYERS} />}
-      <LeaveButton code={code} isHost={isHost} />
-    </Panel>
+      {isHost ? (
+        <StartButton code={code} canStart={lobby.players.length >= MIN_PLAYERS} />
+      ) : (
+        <div className={ACTION_PANEL}>
+          <span className="leading-snug">{host?.display_name} starts the game</span>
+          <span className={ACTION_LABEL}>Waiting</span>
+        </div>
+      )}
+    </SetupScreen>
   );
 }
 
@@ -131,20 +141,20 @@ async function GameView({ code, seat }: { code: string; seat: number }) {
   // the room is marked as started a moment before the game is saved. the ping after the save reloads this
   if (!game) {
     return (
-      <Panel data-cy="dealing">
-        <p className="text-sm">Dealing the cards…</p>
-      </Panel>
+      <Message data-cy="dealing" title="Dealing" fit={2.55}>
+        <p>Dealing the cards…</p>
+      </Message>
     );
   }
   // they joined in the moment between the host pressing Start and the game being dealt
   if (!game.state.players.some((p) => p.id === seat)) {
     return (
-      <Panel data-cy="not-in-game">
-        <p className="text-sm">This game started without you.</p>
-        <Link href="/online" className="text-sm underline">
+      <Message data-cy="not-in-game" title="Too late" fit={2.77}>
+        <p>This game started without you.</p>
+        <Link href="/online" className={QUIET_LINK}>
           Create or join another room
         </Link>
-      </Panel>
+      </Message>
     );
   }
   return (

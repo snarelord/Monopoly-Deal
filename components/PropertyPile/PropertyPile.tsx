@@ -1,25 +1,24 @@
 import { useState } from "react";
 import type { Card as CardType, Colour, PropertySet } from "@/lib/types";
 import { SETS, isComplete, isFlipped, wildcardMoves } from "@/lib/types";
+import { SETS_TO_WIN } from "@/lib/gameHelpers";
 import { COLOUR_STYLES, colourName } from "../colourStyles";
 import Card from "@/components/Card";
 import CardPreview from "../PlayerHand/CardPreview";
+import { completeCount } from "@/components/SetMeter";
 
 /*
-  PLANNED: viewing another player's property pile
-  - clicking an opponent's property chips in their panel (see GameBoard) opens this component for them, read only,
-    with right click preview (and flipped wildcards) working the same
-  - needs a prop to say whose pile it is (the heading becomes "Sam's properties", from their name)
-  - later this becomes the picker for Sly Deal / Forced Deal (pick one card, not from a complete set)
-    and Deal Breaker (pick a whole complete set), so a "pick" mode that highlights what's allowed
+  PLANNED: this becomes the picker for Sly Deal / Forced Deal (pick one card, not from a complete set)
+  and Deal Breaker (pick a whole complete set), so a "pick" mode that highlights what's allowed
 */
 interface PropertyPileProps {
   playerId: number;
   sets: PropertySet[];
+  title?: string;
   onMoveWildcard?: (cardId: string, colour: Colour) => void; // left out when wildcards can't be moved right now
 }
 
-export default function PropertyPile({ playerId, sets, onMoveWildcard }: PropertyPileProps) {
+export default function PropertyPile({ playerId, sets, title = "Your sets", onMoveWildcard }: PropertyPileProps) {
   const [preview, setPreview] = useState<{ card: CardType; flipped: boolean } | null>(null);
   const [moving, setMoving] = useState<{ card: CardType; colours: Colour[] } | null>(null);
 
@@ -27,12 +26,17 @@ export default function PropertyPile({ playerId, sets, onMoveWildcard }: Propert
     <div
       data-cy={`properties-${playerId}`}
       data-count={sets.length}
-      className="flex h-full w-full flex-col rounded-lg border border-black/20 bg-white/60 p-3 text-black"
+      className="flex h-full w-full flex-col"
     >
-      <div className="font-heading mb-2 text-sm font-semibold">Properties</div>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="font-heading text-3xl leading-none">{title}</h2>
+        <span className="text-sm text-highlight">
+          {completeCount(sets)} of {SETS_TO_WIN} complete
+        </span>
+      </div>
 
       {sets.length === 0 ? (
-        <div className="grid flex-1 place-items-center rounded border-2 border-black/30 text-xs">
+        <div className="grid min-h-24 flex-1 place-items-center border-2 border-dashed border-paper/20 text-sm text-paper/70">
           No properties yet
         </div>
       ) : (
@@ -46,8 +50,8 @@ export default function PropertyPile({ playerId, sets, onMoveWildcard }: Propert
               data-complete={isComplete(set)}
               className="[--peek:calc(var(--card-w)*0.29)]"
             >
-              <header className={`font-heading mb-1 flex w-(--card-w) justify-between rounded px-1.5 py-0.5 text-xs font-semibold ${COLOUR_STYLES[set.colour]}`}>
-                <span className="capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
+              <header className={`font-heading mb-1 flex w-(--card-w) justify-between gap-1 px-1.5 pt-0.5 text-[clamp(12px,calc(var(--card-w)*0.15),16px)] leading-tight ${COLOUR_STYLES[set.colour]}`}>
+                <span className="min-w-0 truncate capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
                 <span className="shrink-0">
                   {set.cards.length}/{SETS[set.colour].size}
                   {isComplete(set) && " ✓"}

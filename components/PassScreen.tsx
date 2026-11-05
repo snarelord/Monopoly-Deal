@@ -1,23 +1,49 @@
+import SetupScreen, { ActionPanel, LABEL, PANEL, fitFor } from "@/components/SetupScreen";
+
+interface PassScreenProps {
+  name: string;
+  recent: string[]; // what's happened since this player last had the screen, newest first
+  onReady: () => void;
+}
+
 // HOT-SEAT ONLY: covers the board when the device needs handing to another player, so they
 // don't see the previous player's hand. remove this when online play arrives (everyone has their own screen)
-//
-// PLANNED (cheap, since this goes away online):
-// - show what's happened since this player last had the screen, from GameState.log (see types.ts),
-//   e.g. "Player 1 played Debt Collector on you (5M)", so it's a catch up rather than just a blocker
-export default function PassScreen({ name, onReady }: { name: string; onReady: () => void }) {
+export default function PassScreen({ name, recent, onReady }: PassScreenProps) {
   return (
-    <div data-cy="pass-screen" className="fixed inset-0 z-50 grid place-items-center bg-neutral-800 p-4 text-white">
-      <div className="flex min-w-0 flex-col items-center gap-4 text-center">
-        <p className="font-heading text-2xl font-semibold wrap-break-word">Pass to {name}</p>
-        <button
-          type="button"
-          data-cy="pass-continue"
-          onClick={onReady}
-          className="cursor-pointer rounded border-2 border-white px-4 py-2"
-        >
-          I&apos;m {name}
-        </button>
-      </div>
-    </div>
+    <SetupScreen
+      as="div"
+      data-cy="pass-screen"
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain"
+      columns="lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)]"
+      title={
+        <>
+          Pass to <span className="text-highlight">{name}</span>
+        </>
+      }
+      fit={fitFor(`Pass to ${name}`)}
+    >
+      <section className={PANEL}>
+        <h2 className={LABEL}>Since your last turn</h2>
+        {recent.length === 0 ? (
+          <p className="text-paper/80">Nothing to catch up on</p>
+        ) : (
+          <ul className="max-w-[34em]">
+            {recent.map((line, i) => (
+              <li key={i} className="border-t border-paper/20 py-2 text-paper/90">
+                {line}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <ActionPanel
+        type="button"
+        data-cy="pass-continue"
+        onClick={onReady}
+        hint="Your hand stays hidden until you press this"
+        label={`I'm ${name}`}
+      />
+    </SetupScreen>
   );
 }

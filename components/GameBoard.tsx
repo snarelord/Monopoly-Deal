@@ -9,18 +9,16 @@ import ActionPile from "./ActionPile/ActionPile";
 import PlayerBank from "./PlayerHand/PlayerBank";
 import PropertyPile from "./PropertyPile/PropertyPile";
 import TurnInfo from "./TurnInfo";
+import NextStep from "./NextStep";
 import PaymentPanel from "./PaymentPanel";
 import ResponsePanel from "./ResponsePanel";
 import GameLog from "./GameLog";
 import Toasts from "./Toasts";
 import GameOver from "./GameOver";
+import Stripe from "./Stripe";
 import { describeEntry, isAimedAt } from "./logText";
 import OpponentPanel from "./OpponentPanel";
 
-/*
-  PLANNED:
-  - clicking an opponent's bank or properties opens the full view (see the PLANNED notes in PlayerBank and PropertyPile)
-*/
 export interface GameBoardProps extends PlayerView {
   onMove: (move: Move) => void;
   moveError: string | null;
@@ -42,6 +40,7 @@ export default function GameBoard({
 }: GameBoardProps) {
   const [seen, setSeen] = useState<Record<number, number>>(() => ({ [me.id]: log.length }));
   const [showGameOver, setShowGameOver] = useState(true);
+  const [discardIds, setDiscardIds] = useState<string[]>([]);
   const everyone = [{ id: me.id, name: me.name, properties: me.properties, bank: me.bank }, ...opponents].toSorted(
     (a, b) => a.id - b.id,
   );
@@ -62,89 +61,106 @@ export default function GameBoard({
       (debt.toPlayerId === me.id && debt.status === "countering"),
   );
 
+  function toggleDiscard(id: string) {
+    setDiscardIds((ids) =>
+      ids.includes(id) ? ids.filter((x) => x !== id) : ids.length < turn.cardsToDiscard ? [...ids, id] : ids,
+    );
+  }
+
+  function discard() {
+    onMove({ type: "discard", cardIds: discardIds });
+    setDiscardIds([]);
+  }
+
+  // HOT-SEAT ONLY: on a shared screen "your turn" doesn't say whose, so it uses the name
+  const banner =
+    turn.winnerId !== null
+      ? { title: `${names[turn.winnerId]} wins` }
+      : turn.mustDiscard
+        ? { title: "Discard", accent: String(turn.cardsToDiscard), tail: turn.cardsToDiscard === 1 ? "card" : "cards" }
+        : { title: me.id === turn.currentPlayerId && !onNewGame ? "Your turn" : `${names[turn.currentPlayerId]}'s turn` };
+
   return (
     <div
       data-cy="game-board"
-      className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] gap-4 overflow-hidden px-4 pt-4"
+      className="flex min-h-dvh flex-col overflow-x-clip bg-primary text-paper [--gutter:clamp(16px,2.5vw,36px)] [--pile-w:calc(var(--card-w)*0.8)] max-md:[--card-w:clamp(5rem,24vw,6.5rem)] lg:h-dvh lg:overflow-hidden"
     >
-      <div className="flex h-[clamp(8rem,22dvh,13rem)] justify-center-safe gap-4 overflow-x-auto">
-        {opponents.map((opponent) => (
-          <div key={opponent.id} className="h-full min-w-56 max-w-xl flex-1">
-            <OpponentPanel opponent={opponent} isTheirTurn={opponent.id === turn.currentPlayerId} />
-          </div>
-        ))}
-      </div>
+      <TurnInfo turn={turn} {...banner} onNewGame={onNewGame} />
+      <Stripe height="clamp(8px,1vw,12px)" className="mt-2 flex-none" />
 
-      <div className="relative grid min-h-0 place-items-center">
-        {onNewGame && (
-          <button
-            type="button"
-            data-cy="new-game"
-            onClick={onNewGame}
-            className="absolute left-0 top-0 cursor-pointer rounded border-2 border-black/40 px-2 py-1 text-xs text-black"
-          >
-            Deal again
-          </button>
-        )}
-        <div className="absolute bottom-0 left-0 top-9 hidden w-56 lg:flex">
-          <GameLog log={log} viewerId={me.id} names={names} />
-        </div>
-        <div className="flex items-center gap-[calc(var(--card-w)*0.4)]">
-          <DrawPile
-            count={drawPileCount}
-            canDraw={turn.canDraw}
-            onDraw={() => onMove({ type: "draw" })}
-          />
-          <ActionPile cards={discardPile} />
-          <div className="flex w-52 flex-col gap-2">
-            <TurnInfo turn={turn} names={names} moveError={moveError} />
-            <button
-              type="button"
-              data-cy="end-turn"
-              disabled={!turn.canEndTurn}
-              onClick={() => onMove({ type: "end-turn" })}
-              className="cursor-pointer rounded bg-green-700 px-3 py-1.5 text-white disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              End turn
-            </button>
-          </div>
-        </div>
-        {log.length > 0 && (
-          <p data-cy="latest-log" className="max-w-full truncate text-xs text-black/70 lg:hidden">
-            {describeEntry(log[log.length - 1], me.id, names)}
-          </p>
-        )}
-      </div>
+      {log.length > 0 && (
+        <p data-cy="latest-log" className="truncate px-(--gutter) py-1 text-xs text-paper/70 lg:hidden">
+          {describeEntry(log[log.length - 1], me.id, names)}
+        </p>
+      )}
 
-      <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-[minmax(12rem,1fr)_minmax(0,1.4fr)_minmax(12rem,1fr)]">
-        <div className="relative order-2 min-h-[clamp(11rem,30dvh,24rem)] md:order-0">
-          <div className="absolute inset-0">
-            <PlayerBank playerId={me.id} cards={me.bank} />
+      <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)_minmax(0,2fr)] lg:grid-rows-[minmax(0,1fr)_auto]">
+        <aside
+          aria-label="Other players"
+          className="flex min-w-0 flex-col gap-3 bg-secondary p-2 lg:col-start-2 lg:row-start-1 lg:min-h-0 lg:overflow-y-auto lg:p-3"
+        >
+          <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+            {opponents.map((opponent) => (
+              <div key={opponent.id} className="w-60 flex-none lg:w-auto">
+                <OpponentPanel opponent={opponent} isTheirTurn={opponent.id === turn.currentPlayerId} compact={opponents.length > 3} />
+              </div>
+            ))}
           </div>
-        </div>
+          <div className="hidden min-h-24 flex-1 lg:flex">
+            <GameLog log={log} viewerId={me.id} names={names} />
+          </div>
+        </aside>
 
-        <div className="order-1 col-span-2 min-w-0 self-end md:order-0 md:col-span-1">
-          <PlayerHand
-            me={me}
-            turn={turn}
-            opponents={opponents}
-            names={names}
-            onMove={onMove}
+        <div className="min-w-0 px-(--gutter) py-4 lg:col-start-1 lg:row-start-1 lg:min-h-0">
+          <PropertyPile
+            playerId={me.id}
+            sets={me.properties}
+            onMoveWildcard={
+              me.id === turn.currentPlayerId && !turn.pendingCard && turn.winnerId === null
+                ? (cardId, colour) => onMove({ type: "move-wildcard", cardId, colour })
+                : undefined
+            }
           />
         </div>
 
-        <div className="relative order-3 min-h-[clamp(11rem,30dvh,24rem)] md:order-0">
-          <div className="absolute inset-0">
-            <PropertyPile
-              playerId={me.id}
-              sets={me.properties}
-              onMoveWildcard={
-                me.id === turn.currentPlayerId && !turn.pendingCard && turn.winnerId === null
-                  ? (cardId, colour) => onMove({ type: "move-wildcard", cardId, colour })
-                  : undefined
-              }
+        <section
+          aria-label="Your bank and hand"
+          className="flex min-w-0 flex-col-reverse gap-4 px-(--gutter) lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:flex-row lg:items-end lg:gap-[clamp(20px,3vw,44px)]"
+        >
+          <div className="relative h-36 flex-none lg:h-auto lg:w-[clamp(11rem,19vw,17rem)] lg:self-stretch">
+            <div className="absolute inset-0 lg:pb-3">
+              <PlayerBank playerId={me.id} cards={me.bank} />
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <PlayerHand
+              me={me}
+              turn={turn}
+              opponents={opponents}
+              names={names}
+              onMove={onMove}
+              discardIds={turn.mustDiscard ? discardIds : null}
+              onToggleDiscard={toggleDiscard}
             />
           </div>
+        </section>
+
+        {/* phones: contents, so the next step can stay pinned to the bottom of the whole board */}
+        <div className="flex min-w-0 [--gutter:1rem] max-md:contents lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:flex-col">
+          <div className="flex flex-none justify-center gap-3 px-3 py-4">
+            <DrawPile count={drawPileCount} canDraw={turn.canDraw} onDraw={() => onMove({ type: "draw" })} />
+            <ActionPile cards={discardPile} />
+          </div>
+          <NextStep
+            turn={turn}
+            myId={me.id}
+            names={names}
+            moveError={moveError}
+            discardIds={discardIds}
+            onDiscard={discard}
+            onMove={onMove}
+          />
         </div>
       </div>
 

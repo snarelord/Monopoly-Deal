@@ -100,7 +100,7 @@ describe("Birthday in the game", () => {
   });
 
   it("collects 2M from the other player", () => {
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     takeSeat();
@@ -145,7 +145,7 @@ describe("Birthday paid automatically in the game", () => {
   );
 
   it("only takes what covers 2M, not the big note", () => {
-    cy.visit(`/?seed=${found.seed}`);
+    cy.visit(`/local?seed=${found.seed}`);
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     takeSeat();

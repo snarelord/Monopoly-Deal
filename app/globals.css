@@ -12,6 +12,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #21232e;
+  --color-secondary: #1e4c9c;
+  --color-highlight: #f28a1e;
+  --color-paper: #f4f1ea;
   --font-heading: var(--font-bebas-neue), Arial, Helvetica, sans-serif;
 }
 

@@ -3,7 +3,7 @@ import { cardData } from "../../lib/cardData";
 const cardNames = cardData.map((c) => c.name);
 
 describe("Game board", () => {
-  beforeEach(() => cy.visit("/?players=2"));
+  beforeEach(() => cy.visit("/local?players=2"));
 
   it("deals me five cards", () => {
     cy.get('[data-cy="my-hand"] [data-cy="card"]').should("have.length", 5);

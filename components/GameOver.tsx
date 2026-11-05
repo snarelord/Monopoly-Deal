@@ -1,8 +1,10 @@
 import { useState } from "react";
+import Link from "next/link";
 import type { Card as CardType, PropertySet } from "@/lib/types";
 import { isComplete } from "@/lib/types";
 import CardPreview from "@/components/PlayerHand/CardPreview";
 import MiniSet from "@/components/MiniSet";
+import SetupScreen, { ACTION_LABEL, ACTION_PANEL, ActionPanel, BLUE_PANEL, LABEL, PANEL, QUIET_LINK, fitFor } from "@/components/SetupScreen";
 
 interface GameOverProps {
   players: { id: number; name: string; properties: PropertySet[]; bank: CardType[] }[];
@@ -26,76 +28,72 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
     .sort((a, b) => Number(b.id === winnerId) - Number(a.id === winnerId) || b.sets - a.sets || b.bank - a.bank);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-      <div
-        data-cy="game-over"
-        data-winner={winnerId}
-        role="dialog"
-        aria-label={`${winner.name} wins`}
-        className="flex max-h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto rounded-lg bg-white p-5 text-black shadow-xl"
-      >
-        <h2 className="font-heading text-2xl font-bold wrap-break-word">{winner.name} wins!</h2>
+    <SetupScreen
+      as="div"
+      data-cy="game-over"
+      data-winner={winnerId}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${winner.name} wins`}
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain"
+      columns="lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,3fr)]"
+      title={
+        <>
+          <span className="text-highlight">{winner.name}</span> wins
+        </>
+      }
+      fit={fitFor(`${winner.name} wins`)}
+    >
+      <section className={PANEL}>
+        <h2 className={LABEL}>Winning sets</h2>
+        <ul className="flex flex-wrap gap-3 [--mini:calc(var(--card-w)*0.9)]">
+          {winner.properties.filter(isComplete).map((set) => (
+            <li key={set.cards[0].id} data-cy="winning-set" data-colour={set.colour} className="w-(--mini)">
+              <MiniSet set={set} onPreview={(card, flipped) => setPreview({ card, flipped })} />
+            </li>
+          ))}
+        </ul>
+        <button type="button" data-cy="game-over-close" onClick={onClose} className={`mt-auto cursor-pointer ${QUIET_LINK}`}>
+          View the board
+        </button>
+      </section>
 
-        <section>
-          <div className="mb-1 text-xs font-semibold">Winning sets</div>
-          <ul className="flex flex-wrap gap-3 [--mini:calc(var(--card-w)*0.7)]">
-            {winner.properties.filter(isComplete).map((set) => (
-              <li key={set.cards[0].id} data-cy="winning-set" data-colour={set.colour} className="w-(--mini)">
-                <MiniSet set={set} onPreview={(card, flipped) => setPreview({ card, flipped })} />
-              </li>
-            ))}
-          </ul>
-        </section>
-
+      <section className={BLUE_PANEL}>
+        <h2 className={LABEL}>Standings</h2>
         <div className="overflow-x-auto">
           <table data-cy="standings" className="w-full text-left text-sm">
-            <thead className="text-xs text-black/60">
+            <thead className="text-xs text-paper/80">
               <tr>
-                <th className="py-1 font-semibold">Player</th>
-                <th className="py-1 font-semibold">Complete sets</th>
-                <th className="py-1 font-semibold">Properties</th>
-                <th className="py-1 font-semibold">Bank</th>
+                <th className="py-1 font-normal">Player</th>
+                <th className="py-1 font-normal">Sets</th>
+                <th className="py-1 font-normal">Properties</th>
+                <th className="py-1 font-normal">Bank</th>
               </tr>
             </thead>
             <tbody>
               {standings.map((s) => (
-                <tr key={s.id} data-cy="standing" data-player={s.id} className="border-t border-black/10">
-                  <td className="py-1 font-semibold">
-                    {s.name}
-                    {s.id === winnerId && " 🏆"}
-                  </td>
-                  <td className="py-1">{s.sets}</td>
-                  <td className="py-1">{s.properties}</td>
-                  <td className="py-1">{s.bank}M</td>
+                <tr key={s.id} data-cy="standing" data-player={s.id} className="border-t border-paper/35">
+                  <td className="py-2 font-heading text-2xl leading-none">{s.name}</td>
+                  <td className="py-2">{s.sets}</td>
+                  <td className="py-2">{s.properties}</td>
+                  <td className="py-2">{s.bank}M</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </section>
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            data-cy="game-over-close"
-            onClick={onClose}
-            className="cursor-pointer rounded border-2 border-black px-3 py-1"
-          >
-            View the board
-          </button>
-          {onPlayAgain && (
-            <button
-              type="button"
-              data-cy="play-again"
-              onClick={onPlayAgain}
-              className="cursor-pointer rounded bg-green-700 px-3 py-1 text-white"
-            >
-              Play again
-            </button>
-          )}
-        </div>
-      </div>
+      {onPlayAgain ? (
+        <ActionPanel type="button" data-cy="play-again" onClick={onPlayAgain} hint="Same players, new deal" label="Play again" />
+      ) : (
+        <Link href="/" data-cy="back-to-menu" className={`${ACTION_PANEL} transition-[filter] hover:brightness-105`}>
+          <span className="leading-snug">This game is finished</span>
+          <span className={ACTION_LABEL}>Back to menu</span>
+        </Link>
+      )}
 
       <CardPreview card={preview?.card ?? null} flipped={preview?.flipped} onClose={() => setPreview(null)} />
-    </div>
+    </SetupScreen>
   );
 }

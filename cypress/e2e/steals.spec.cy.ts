@@ -159,7 +159,7 @@ describe("Steal menu options", () => {
   const options = (steal: Card, mine: PropertySet[], p1: PropertySet[], p2: PropertySet[]) => {
     const me = { id: 0, name: "Player 1", hand: [steal], bank: [], properties: mine };
     const opponents = [p1, p2].map((properties, i) => ({ id: i + 1, name: `Player ${i + 2}`, handCount: 0, bank: [], properties }));
-    const ctx = { playBlockedReason: null, canDiscard: false, opponents, me, playsLeft: PLAYS_PER_TURN };
+    const ctx = { playBlockedReason: null, opponents, me, playsLeft: PLAYS_PER_TURN };
     return getCardActions(steal, ctx).find((a) => a.id === "play-on-player")!;
   };
 
@@ -186,7 +186,7 @@ describe("Sly Deal in the game", () => {
 
   it("takes the other player's property through the picker", () => {
     const { seed, property } = found;
-    cy.visit(`/?seed=${seed}`);
+    cy.visit(`/local?seed=${seed}`);
     drawCards();
     cy.get('[data-cy="end-turn"]').click();
     takeSeat();

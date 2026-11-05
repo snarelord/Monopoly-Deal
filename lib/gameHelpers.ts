@@ -503,7 +503,7 @@ function payDebt(game: GameState, playerId: number, cardIds: string[]): MoveResu
 }
 
 // puts a property into the first unfinished set of that colour, or starts a new set
-function addToSet(sets: PropertySet[], card: Card, colour: Colour): PropertySet[] {
+export function addToSet(sets: PropertySet[], card: Card, colour: Colour): PropertySet[] {
   if (card.type !== "property" && card.type !== "wildcard") return sets;
   const open = sets.findIndex((s) => s.colour === colour && !isComplete(s));
   if (open < 0) return [...sets, { colour, cards: [card], house: null, hotel: null }];

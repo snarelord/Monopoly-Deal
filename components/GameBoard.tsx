@@ -18,6 +18,7 @@ import GameOver from "./GameOver";
 import Stripe from "./Stripe";
 import { describeEntry, isAimedAt } from "./logText";
 import OpponentPanel from "./OpponentPanel";
+import { useCardFlights } from "./useCardFlights";
 
 export interface GameBoardProps extends PlayerView {
   onMove: (move: Move) => void;
@@ -41,6 +42,12 @@ export default function GameBoard({
   const [seen, setSeen] = useState<Record<number, number>>(() => ({ [me.id]: log.length }));
   const [showGameOver, setShowGameOver] = useState(true);
   const [discardIds, setDiscardIds] = useState<string[]>([]);
+  const noteMove = useCardFlights(me.id, me.hand.map((card) => card.id));
+
+  function playMove(move: Move) {
+    noteMove(move); // before the move, while the card is still where it started
+    onMove(move);
+  }
   const everyone = [{ id: me.id, name: me.name, properties: me.properties, bank: me.bank }, ...opponents].toSorted(
     (a, b) => a.id - b.id,
   );
@@ -68,7 +75,7 @@ export default function GameBoard({
   }
 
   function discard() {
-    onMove({ type: "discard", cardIds: discardIds });
+    playMove({ type: "discard", cardIds: discardIds });
     setDiscardIds([]);
   }
 
@@ -139,7 +146,7 @@ export default function GameBoard({
               turn={turn}
               opponents={opponents}
               names={names}
-              onMove={onMove}
+              onMove={playMove}
               discardIds={turn.mustDiscard ? discardIds : null}
               onToggleDiscard={toggleDiscard}
             />

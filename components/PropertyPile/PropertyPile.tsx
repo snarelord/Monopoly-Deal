@@ -54,7 +54,7 @@ export default function PropertyPile({ playerId, sets, title = "Your sets", onMo
                 <span className="min-w-0 truncate capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
                 <span className="shrink-0">
                   {set.cards.length}/{SETS[set.colour].size}
-                  {isComplete(set) && " ✓"}
+                  {isComplete(set) && " ✓"} {/*PLANNED: update this to a nice icon*/}
                 </span>
               </header>
 

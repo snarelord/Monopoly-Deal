@@ -3,8 +3,9 @@
 import { after } from "next/server";
 import { beginGame, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
 import { saveMove } from "@/lib/gameStore";
+import { viewFor, type PlayerView } from "@/lib/playerView";
 import { makeRoomCode, ROOM_CODE_LENGTH, tidyCode } from "@/lib/roomCode";
-import { announceRoomChange, getLobby } from "@/lib/rooms";
+import { announceRoomChange, getLobby, getSeat } from "@/lib/rooms";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import type { Move } from "@/lib/types";
 import type { Json } from "@/lib/supabase/database.types";
@@ -141,15 +142,19 @@ export async function startGame(rawCode: string): Promise<{ error: string } | nu
   return null;
 }
 
-export async function makeMove(rawCode: string, move: Move): Promise<{ error: string } | null> {
+export async function makeMove(
+  rawCode: string,
+  move: Move,
+): Promise<{ error: string } | { view: PlayerView; version: number }> {
   const userId = await getUserId();
   if(!userId) return NOT_SIGNED_IN;
   const code = tidyCode(rawCode);
 
-  const seat = (await getLobby(code))?.players.find((player) => player.user_id === userId)?.seat;
-  if (seat === undefined) return { error: "You're not in this game."};
+  const seat = await getSeat(code, userId);
+  if (seat === null) return { error: "You're not in this game."};
 
-  const result = await saveMove(createAdminSupabase(), code, seat, move);
-  if (!result) after(() => announceRoomChange(code));
-  return result;
+  const saved = await saveMove(createAdminSupabase(), code, seat, move);
+  if ("error" in saved) return saved;
+  after(() => announceRoomChange(code, saved.version));
+  return { view: viewFor(saved.state, seat), version: saved.version };
 }

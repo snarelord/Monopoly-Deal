@@ -8,7 +8,7 @@ type Seat = { code: string; seat: number };
 
 async function play(code: string, seat: number, move: Move) {
   const result = await saveMove(db(), code, seat, move);
-  if (result) throw new Error(`Seat ${seat} couldn't ${move.type}: ${result.error}`);
+  if ("error" in result) throw new Error(`Seat ${seat} couldn't ${move.type}: ${result.error}`);
   await pingRoom(code);
 }
 

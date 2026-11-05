@@ -159,7 +159,7 @@ async function GameView({ code, seat }: { code: string; seat: number }) {
   }
   return (
     <main>
-      <OnlineGame code={code} view={viewFor(game.state, seat)} />
+      <OnlineGame code={code} view={viewFor(game.state, seat)} version={game.version} />
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ROOM_CHANGED, roomChannel } from "@/lib/roomChannel";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { seenVersions } from "./seenVersions";
 
 export default function RoomUpdates({ code }: { code: string }) {
   const router = useRouter();
@@ -12,9 +13,12 @@ export default function RoomUpdates({ code }: { code: string }) {
     const supabase = createBrowserSupabase();
     const channel = supabase
       .channel(roomChannel(code))
-      .on("broadcast", { event: ROOM_CHANGED }, () => router.refresh())
+      .on("broadcast", { event: ROOM_CHANGED }, ({ payload }) => {
+        // this tab's own move has already updated its board. lobby changes have no version, so they always reload
+        if (typeof payload?.version === "number" && payload.version <= (seenVersions.get(code) ?? -1)) return;
+        router.refresh();
+      })
       .subscribe((status) => {
-        // also runs after a reconnect, e.g. a phone waking up, to catch anything missed while offline
         if (status === "SUBSCRIBED") router.refresh();
       });
     return () => {

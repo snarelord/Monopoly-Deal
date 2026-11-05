@@ -138,6 +138,61 @@ describe("Moving wildcards", () => {
     expect(after.players[0].bank.map((c) => c.id)).to.include("house-1");
   });
 
+  it("merges two unfinished sets of a colour when a wildcard leaves a complete one", () => {
+    const before = owning(
+      set("darkBlue", "property-park-lane", "wildcard-dark-blue-green-1"),
+      set("darkBlue", "property-mayfair"),
+    );
+    const after = play(before, move("wildcard-dark-blue-green-1", "green"));
+    expect(sets(after)).to.deep.equal([
+      "darkBlue:property-park-lane,property-mayfair",
+      "green:wildcard-dark-blue-green-1",
+    ]);
+  });
+
+  it("merges them when a payment breaks a complete set too", () => {
+    const debtCollector = card("action-debt-collector-1");
+    const start = holding(debtCollector);
+    const game: GameState = {
+      ...start,
+      players: start.players.map((p) =>
+        p.id === 1
+          ? {
+              ...p,
+              bank: [card("money-1m-1")],
+              properties: [
+                set("darkBlue", "property-park-lane", "wildcard-dark-blue-green-1"),
+                set("darkBlue", "property-mayfair"),
+              ],
+            }
+          : p,
+      ),
+    };
+    const asked = play(game, { type: "play", cardId: debtCollector.id, targetId: 1 });
+    const accepted = applyMove(asked, 1, { type: "accept" });
+    if (!accepted.ok) throw new Error(accepted.error);
+    const paid = applyMove(accepted.game, 1, { type: "pay", cardIds: ["wildcard-dark-blue-green-1", "money-1m-1"] });
+    if (!paid.ok) throw new Error(paid.error);
+
+    expect(paid.game.players[1].properties.map((s) => s.cards.map((c) => c.id))).to.deep.equal([
+      ["property-park-lane", "property-mayfair"],
+    ]);
+  });
+
+  it("keeps a new set for the cards that don't fit when merging", () => {
+    const before = owning(
+      set("green", "property-bond-street", "wildcard-dark-blue-green-1"),
+      set("green", "property-regent-street", "wildcard-black-green-1"),
+      set("orange", "wildcard-orange-pink-1"),
+    );
+    const after = play(before, move("wildcard-orange-pink-1", "pink"));
+    expect(sets(after)).to.deep.equal([
+      "green:property-bond-street,wildcard-dark-blue-green-1,property-regent-street",
+      "green:wildcard-black-green-1",
+      "pink:wildcard-orange-pink-1",
+    ]);
+  });
+
   it("can complete a third set and win", () => {
     const game = owning(
       set("brown", "property-old-kent-road", "property-whitechapel-road"),

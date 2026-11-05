@@ -96,6 +96,15 @@ export function applyMove(game: GameState, actorId: number, move: Move): MoveRes
   return ok(checkForWinner(tidySets(result.game)));
 }
 
+// a complete set that loses a card can leave two unfinished sets of one colour, so their cards go back together.
+// an emptied set has no cards to carry across, so this clears those away too
+const mergeUnfinished = (sets: PropertySet[]) =>
+  sets.reduce<PropertySet[]>(
+    (merged, set) =>
+      isComplete(set) ? [...merged, set] : set.cards.reduce((all, card) => addToSet(all, card, set.colour), merged),
+    [],
+  );
+
 function tidySets(game: GameState): GameState {
   return {
     ...game,
@@ -108,7 +117,7 @@ function tidySets(game: GameState): GameState {
         if (set.hotel && !keepHotel) bank.push(set.hotel);
         return { ...set, house: keepHouse || null, hotel: keepHotel || null };
       });
-      return { ...p, bank, properties: properties.filter((set) => set.cards.length > 0) };
+      return { ...p, bank, properties: mergeUnfinished(properties) };
     }),
   };
 }

@@ -44,6 +44,16 @@ describe("Property pile", () => {
       .and("have.attr", "data-count", "2");
   });
 
+  it("completes a set", () => {
+    cy.visit("/local?seed=136");
+    drawCards();
+    playToProperties("property-mayfair");
+    playToProperties("property-park-lane");
+    cy.get(`${pile} [data-cy="property-set"]`).should("have.attr", "data-complete", "true");
+    cy.pause();
+  });
+
+
   it("stacks cards so each one's top strip is visible", () => {
     drawCards();
     playToProperties(first.id);

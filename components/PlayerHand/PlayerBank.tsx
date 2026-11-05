@@ -32,7 +32,7 @@ export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
       ) : (
         // fixed-width columns narrower than a card, so each card overlaps the next and shows its value corner.
         // rows wrap when full, right padding leaves room for the last card in a row to show in full
-        <ul className="grid flex-1 grid-cols-[repeat(auto-fill,calc(var(--card-w)*0.35))] content-start gap-y-2 overflow-y-auto overflow-x-hidden pr-[calc(var(--card-w)*0.4)]">
+        <ul className="grid flex-1 grid-cols-[repeat(auto-fill,calc(var(--card-w)*0.27))] content-start gap-y-2 overflow-y-auto overflow-x-hidden pr-[calc(var(--card-w)*0.48)]">
           {cards.map((card) => (
             <li key={card.id} className="relative hover:z-10 hover:drop-shadow-lg">
               <button

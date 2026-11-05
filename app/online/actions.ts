@@ -1,11 +1,12 @@
 "use server";
 
 import { after } from "next/server";
-import { beginGame, applyMove, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
+import { beginGame, MAX_NAME_LENGTH, MAX_PLAYERS, MIN_PLAYERS } from "@/lib/gameHelpers";
+import { saveMove } from "@/lib/gameStore";
 import { makeRoomCode, ROOM_CODE_LENGTH, tidyCode } from "@/lib/roomCode";
-import { announceRoomChange, getGame, getLobby } from "@/lib/rooms";
+import { announceRoomChange, getLobby } from "@/lib/rooms";
 import { createAdminSupabase } from "@/lib/supabase/admin";
-import type { GameState, Move, MoveResult } from "@/lib/types";
+import type { Move } from "@/lib/types";
 import type { Json } from "@/lib/supabase/database.types";
 import { getUserId } from "@/lib/supabase/server";
 
@@ -36,7 +37,7 @@ export async function createRoom(rawName: string): Promise<{ code: string } | { 
       .from("room_players")
       .insert({ room_code: code, user_id: userId, seat: 0, display_name: name });
     if (seatError) {
-      await db.from("rooms").delete().eq("code", code); // don't leave an empty room behind CHECK if this is working in test db
+      await db.from("rooms").delete().eq("code", code);
       return { error: "Couldn't create a room. Try again." };
     }
     return { code };
@@ -56,7 +57,7 @@ export async function joinRoom(rawCode: string, rawName: string): Promise<{ code
   const lobby = await getLobby(code);
   if (!lobby) return { error: `There's no room ${code}.` };
   const { status, players } = lobby;
-  if (players.some((p) => p.user_id === userId)) return { code }; // already in, e.g. from another tab
+  if (players.some((p) => p.user_id === userId)) return { code }
   if (status !== "lobby") return { error: "That game has already started." };
   if (players.length >= MAX_PLAYERS) return { error: "That room is full." };
   if (players.some((p) => p.display_name.toLowerCase() === name.toLowerCase())) {
@@ -69,7 +70,7 @@ export async function joinRoom(rawCode: string, rawName: string): Promise<{ code
     .insert({ room_code: code, user_id: userId, seat, display_name: name });
   if (error?.code === UNIQUE_VIOLATION) return { error: "Someone else joined at the same moment. Try again." };
   if (error) return { error: "Couldn't join. Try again." };
-  after(() => announceRoomChange(code)); // runs once the reply is sent, so the joiner isn't kept waiting
+  after(() => announceRoomChange(code));
   return { code };
 }
 
@@ -85,7 +86,7 @@ export async function leaveRoom(rawCode: string): Promise<{ error: string } | nu
   const db = createAdminSupabase();
   const { error } =
     lobby.host_id === userId
-      ? await db.from("rooms").delete().eq("code", code) // the host leaving closes the room. their row goes with it (on delete cascade) CHECK
+      ? await db.from("rooms").delete().eq("code", code)
       : await db.from("room_players").delete().eq("room_code", code).eq("user_id", userId);
   if (error) return { error: "Couldn't leave. Try again." };
   after(() => announceRoomChange(code));
@@ -140,14 +141,6 @@ export async function startGame(rawCode: string): Promise<{ error: string } | nu
   return null;
 }
 
-function tryMove(state: GameState, seat: number, move: Move): MoveResult {
-  try {
-    return applyMove(state, seat, move)
-  } catch {
-    return { ok: false, error: "That move isn't allowed." };
-  }
-}
-
 export async function makeMove(rawCode: string, move: Move): Promise<{ error: string } | null> {
   const userId = await getUserId();
   if(!userId) return NOT_SIGNED_IN;
@@ -156,24 +149,7 @@ export async function makeMove(rawCode: string, move: Move): Promise<{ error: st
   const seat = (await getLobby(code))?.players.find((player) => player.user_id === userId)?.seat;
   if (seat === undefined) return { error: "You're not in this game."};
 
-  const db = createAdminSupabase();
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const game = await getGame(code);
-    if (!game) return { error: "This game hasn't started yet."};
-    const result = tryMove(game.state, seat, move);
-    if (!result.ok) return { error: result.error };
-
-    const { data: saved, error } = await db.from("games").update({
-      state: result.game as unknown as NonNullable<Json>,
-      version: game.version + 1,
-      updated_at: new Date().toISOString(),
-    }).eq("room_code", code).eq("version", game.version).select("version");
-
-    if (error) return { error: "Couldn't save your move. Try again." };
-    if (saved.length > 0) {
-      after(() => announceRoomChange(code));
-      return null;
-    }
-  }
-  return { error: "Lots happening at once. Try that again." };
+  const result = await saveMove(createAdminSupabase(), code, seat, move);
+  if (!result) after(() => announceRoomChange(code));
+  return result;
 }

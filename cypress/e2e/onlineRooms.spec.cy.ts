@@ -10,7 +10,7 @@ describe("Online rooms", () => {
 
   it("saves a new room under the host, and deletes it when they close it", () => {
     cy.visit("/online");
-    cy.get('[data-cy="online-name"]').type("Alex");
+    cy.get('[data-cy="online-name"]').type("Kit");
     cy.get('[data-cy="create-room"]').click();
 
     // the first visit to a room page can take a while to compile in dev
@@ -24,10 +24,10 @@ describe("Online rooms", () => {
           expect(room?.code).to.equal(shown);
           expect(room?.status).to.equal("lobby");
           // the host is the only player so far, in seat 0 under the name typed in
-          expect(room?.room_players).to.deep.equal([{ user_id: room?.host_id, seat: 0, display_name: "Alex" }]);
+          expect(room?.room_players).to.deep.equal([{ user_id: room?.host_id, seat: 0, display_name: "Kit" }]);
         });
         // and the page agrees that's who's signed in
-        cy.get('[data-cy="lobby-player"]').should("have.length", 1).and("contain.text", "Alex (you)").and("contain.text", "host");
+        cy.get('[data-cy="lobby-player"]').should("have.length", 1).and("contain.text", "Kit (you)").and("contain.text", "host");
 
         cy.get('[data-cy="leave-room"]').click();
         cy.location("pathname").should("eq", "/online");

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 import type { Card as CardType, Colour, PropertySet } from "@/lib/types";
 import { SETS, isComplete, isFlipped, wildcardMoves } from "@/lib/types";
 import { SETS_TO_WIN } from "@/lib/gameHelpers";
@@ -54,7 +56,7 @@ export default function PropertyPile({ playerId, sets, title = "Your sets", onMo
                 <span className="min-w-0 truncate capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
                 <span className="shrink-0">
                   {set.cards.length}/{SETS[set.colour].size}
-                  {isComplete(set) && " ✓"} {/*PLANNED: update this to a nice icon*/}
+                  {isComplete(set) && <FontAwesomeIcon icon={faCircleCheck} className="ml-1" />}
                 </span>
               </header>
 

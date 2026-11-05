@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ActionChoice, CardAction } from "@/lib/cardActions";
 import { COLOUR_STYLES, colourName } from "@/components/colourStyles";
 
@@ -27,13 +27,28 @@ const answered = (step: Step, choice: ActionChoice) =>
   : choice.doubleRentIds !== undefined;
 
 const DOUBLE_LABELS = ["No", "Double", "Double twice"];
+const EDGE_GAP = 8;
 
-const optionClass = "cursor-pointer rounded px-3 py-1 text-left hover:outline hover:outline-black";
+const FOCUS = "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-highlight";
+const OPTION = `cursor-pointer border-t border-paper/15 first:border-t-0 px-3 py-2.5 text-left font-heading text-xl leading-none enabled:hover:bg-highlight enabled:hover:text-primary disabled:cursor-not-allowed disabled:text-paper/40 ${FOCUS}`;
+const STEP_TITLE = "px-3 pb-2 font-heading text-xl leading-none text-paper/80";
+const CORNER = `cursor-pointer p-1 text-sm text-paper/80 hover:text-highlight ${FOCUS}`;
 
 export default function PlayerCardActions({ actions, names, side, onActionClick, onClose }: PlayerCardActionsProps) {
   // the action being set up, and what's been picked for it so far
   const [active, setActive] = useState<CardAction | null>(null);
   const [choice, setChoice] = useState<ActionChoice>({});
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // on a phone the menu can be wider than the space beside the card, so it slides back on screen
+  useLayoutEffect(() => {
+    const menu = menuRef.current!;
+    menu.style.translate = ""; // effects run twice in dev, so measure from where it started
+    const { left, right } = menu.getBoundingClientRect();
+    const overRight = right - (document.documentElement.clientWidth - EDGE_GAP);
+    const overLeft = EDGE_GAP - left;
+    menu.style.translate = overRight > 0 ? `${-overRight}px` : overLeft > 0 ? `${overLeft}px` : "";
+  }, []);
 
   const steps = active ? stepsFor(active) : [];
   const step = steps.find((s) => !answered(s, choice));
@@ -68,34 +83,22 @@ export default function PlayerCardActions({ actions, names, side, onActionClick,
 
   return (
     <div
+      ref={menuRef}
       data-cy="card-actions"
-      className={`absolute bottom-10 z-10 flex w-48 flex-col gap-1 rounded-md border border-black/20 bg-white p-2 text-sm text-black shadow-lg ${
+      className={`absolute bottom-10 z-10 flex w-52 flex-col border-2 border-paper/35 bg-primary text-paper shadow-[0_12px_32px_rgb(0_0_0/50%)] ${
         side === "right" ? "left-full ml-3" : "right-full mr-3"
       }`}
     >
-      <div className="flex items-center justify-between">
-        {active ? (
-          <button type="button" data-cy="picker-back" onClick={back} className="cursor-pointer rounded text-xs">
-            ← Back
-          </button>
-        ) : (
-          <span />
-        )}
-        <button
-          type="button"
-          data-cy="card-actions-close"
-          aria-label="Close menu"
-          onClick={onClose}
-          className="cursor-pointer rounded text-xs"
-        >
-          ✕
+      {active && (
+        <button type="button" data-cy="picker-back" onClick={back} className={`mx-2 my-1.5 self-start ${CORNER}`}>
+          Back
         </button>
-      </div>
+      )}
 
       {step === "colour" && (
         <>
-          <div className="px-1 text-xs font-semibold">{active!.id === "rent" ? "Charge rent for…" : active!.id === "add-to-set" ? "Build on…" : "Place as…"}</div>
-          <div className="grid grid-cols-2 gap-1">
+          <div className={STEP_TITLE}>{active!.id === "rent" ? "Charge rent for…" : active!.id === "add-to-set" ? "Build on…" : "Place as…"}</div>
+          <div className="grid grid-cols-2 gap-1 p-1">
             {active!.colours!.map(({ colour, amount, disabled }) => (
               <button
                 key={colour}
@@ -103,7 +106,7 @@ export default function PlayerCardActions({ actions, names, side, onActionClick,
                 data-cy={`colour-${colour}`}
                 disabled={disabled}
                 onClick={() => pick({ colour })}
-                className={`cursor-pointer rounded px-2 py-1 text-xs capitalize hover:outline hover:outline-black disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:outline-none ${COLOUR_STYLES[colour]}`}
+                className={`cursor-pointer px-2 py-2 font-heading text-lg leading-none capitalize enabled:hover:outline-2 enabled:hover:-outline-offset-2 enabled:hover:outline-paper disabled:cursor-not-allowed disabled:opacity-30 ${FOCUS} ${COLOUR_STYLES[colour]}`}
               >
                 {colourName(colour)}
                 {amount !== undefined && ` · ${amount}M`}
@@ -115,14 +118,14 @@ export default function PlayerCardActions({ actions, names, side, onActionClick,
 
       {step === "target" && (
         <>
-          <div className="px-1 text-xs font-semibold">Choose a player…</div>
+          <div className={STEP_TITLE}>Choose a player…</div>
           {active!.targets!.map((targetId) => (
             <button
               key={targetId}
               type="button"
               data-cy={`target-${targetId}`}
               onClick={() => pick({ targetId })}
-              className={`${optionClass} wrap-break-word`}
+              className={`${OPTION} wrap-break-word`}
             >
               {names[targetId]}
             </button>
@@ -132,14 +135,14 @@ export default function PlayerCardActions({ actions, names, side, onActionClick,
 
       {step === "double" && (
         <>
-          <div className="px-1 text-xs font-semibold">Double the rent?</div>
+          <div className={STEP_TITLE}>Double the rent?</div>
           {[0, ...active!.doubleRentIds!.map((_, i) => i + 1)].map((count) => (
             <button
               key={count}
               type="button"
               data-cy={`double-${count}`}
               onClick={() => pick({ doubleRentIds: active!.doubleRentIds!.slice(0, count) })}
-              className={optionClass}
+              className={OPTION}
             >
               {DOUBLE_LABELS[count]} · {rent * 2 ** count}M
             </button>
@@ -156,11 +159,21 @@ export default function PlayerCardActions({ actions, names, side, onActionClick,
             disabled={action.disabled}
             title={action.disabled ? action.reason : undefined}
             onClick={() => start(action)}
-            className="cursor-pointer rounded px-3 py-1 text-left hover:outline hover:outline-black focus-visible:outline focus-visible:outline-black disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:outline-none"
+            className={OPTION}
           >
             {action.label}
           </button>
         ))}
+
+      <button
+        type="button"
+        data-cy="card-actions-close"
+        aria-label="Close menu"
+        onClick={onClose}
+        className={`absolute -right-0.5 bottom-full flex size-9 items-center justify-center border-2 border-b-0 border-paper/35 bg-primary ${CORNER}`}
+      >
+        ✕
+      </button>
     </div>
   );
 }

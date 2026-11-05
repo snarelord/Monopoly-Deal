@@ -134,7 +134,7 @@ export default function GameBoard({
           aria-label="Your bank and hand"
           className="flex min-w-0 flex-col-reverse gap-4 px-(--gutter) lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:flex-row lg:items-end lg:gap-[clamp(20px,3vw,44px)]"
         >
-          <div className="relative h-36 flex-none lg:h-auto lg:w-[clamp(11rem,19vw,17rem)] lg:self-stretch">
+          <div className="relative h-36 flex-none lg:h-auto lg:w-[clamp(12rem,22vw,20rem)] lg:self-stretch">
             <div className="absolute inset-0 lg:pb-3">
               <PlayerBank playerId={me.id} cards={me.bank} />
             </div>

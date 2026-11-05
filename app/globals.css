@@ -27,6 +27,33 @@ body {
   font-synthesis-weight: none;
 }
 
+/* thin flat scrollbars, paper tinted so they sit on both the charcoal and the blue */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(244 241 234 / 25%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(244 241 234 / 50%);
+}
+
+/* firefox has no ::-webkit-scrollbar */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(244 241 234 / 25%) transparent;
+  }
+}
+
 
 /* Card hand */
 /*

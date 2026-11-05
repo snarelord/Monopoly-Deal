@@ -20,7 +20,7 @@ export default function OpponentPanel({ opponent, isTheirTurn }: { opponent: Opp
       }`}
     >
       <header className="flex items-center justify-between gap-3 border-b border-black/10 px-3 py-1.5 text-sm">
-        <span className="flex min-w-0 items-baseline font-semibold">
+        <span className="font-heading flex min-w-0 items-baseline font-semibold">
           <span className="truncate">{opponent.name}</span>
           {isTheirTurn && <span className="ml-2 shrink-0 text-xs font-normal text-green-700">their turn</span>}
         </span>

@@ -10,7 +10,7 @@ export default function TurnInfo({ turn, names, moveError }: { turn: TurnStatus;
       data-plays-left={turn.playsLeft}
       className="rounded-lg border border-black/20 bg-white/70 px-3 py-2 text-sm text-black"
     >
-      <div className="truncate font-semibold">{names[turn.currentPlayerId]}&apos;s turn</div>
+      <div className="font-heading truncate font-semibold">{names[turn.currentPlayerId]}&apos;s turn</div>
       <div>Round {turn.round} · Turn {turn.turnNumber}</div>
       <div>Plays left: {turn.playsLeft}/{PLAYS_PER_TURN}</div>
       {turn.winnerId !== null && (

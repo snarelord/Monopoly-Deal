@@ -59,7 +59,7 @@ export default function StealPicker({ kind, target, me, onConfirm, onCancel }: S
         aria-label={TITLES[kind]}
         className="flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
       >
-        <h2 className="text-lg font-semibold">{TITLES[kind]}</h2>
+        <h2 className="font-heading text-lg font-semibold">{TITLES[kind]}</h2>
 
         {/* padding gives the selected card's outline and lift room inside the scroll area */}
         <div className="flex flex-col gap-3 overflow-y-auto p-2">

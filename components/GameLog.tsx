@@ -6,7 +6,7 @@ export default function GameLog({ log, viewerId, names }: { log: LogEntry[]; vie
 
   return (
     <section data-cy="game-log" className="flex h-full min-h-0 w-full flex-col rounded-lg border border-black/20 bg-white/60 text-black">
-      <header className="border-b border-black/10 px-3 py-1.5 text-sm font-semibold">Game log</header>
+      <header className="font-heading border-b border-black/10 px-3 py-1.5 text-sm font-semibold">Game log</header>
       {recent.length === 0 ? (
         <p className="p-3 text-xs text-black/50">Nothing yet</p>
       ) : (

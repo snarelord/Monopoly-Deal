@@ -77,7 +77,7 @@ export const cardData: Card[] = [
   {
     id: "property-northumberland-drive",
     type: "property",
-    name: "Northumberland Drive",
+    name: "Northumberland Avenue",
     value: 2,
     colour: "pink",
     image: "/cards/northumb-drive.webp",

@@ -29,7 +29,7 @@ export default function PropertyPile({ playerId, sets, onMoveWildcard }: Propert
       data-count={sets.length}
       className="flex h-full w-full flex-col rounded-lg border border-black/20 bg-white/60 p-3 text-black"
     >
-      <div className="mb-2 text-sm font-semibold">Properties</div>
+      <div className="font-heading mb-2 text-sm font-semibold">Properties</div>
 
       {sets.length === 0 ? (
         <div className="grid flex-1 place-items-center rounded border-2 border-black/30 text-xs">
@@ -46,7 +46,7 @@ export default function PropertyPile({ playerId, sets, onMoveWildcard }: Propert
               data-complete={isComplete(set)}
               className="[--peek:calc(var(--card-w)*0.29)]"
             >
-              <header className={`mb-1 flex w-(--card-w) justify-between rounded px-1.5 py-0.5 text-xs font-semibold ${COLOUR_STYLES[set.colour]}`}>
+              <header className={`font-heading mb-1 flex w-(--card-w) justify-between rounded px-1.5 py-0.5 text-xs font-semibold ${COLOUR_STYLES[set.colour]}`}>
                 <span className="capitalize">{set.colour.replace(/([A-Z])/g, " $1")}</span>
                 <span className="shrink-0">
                   {set.cards.length}/{SETS[set.colour].size}
@@ -95,7 +95,7 @@ export default function PropertyPile({ playerId, sets, onMoveWildcard }: Propert
             aria-label={`Move ${moving.card.name}`}
             className="flex w-full max-w-xs flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
           >
-            <h2 className="text-lg font-semibold">Move {moving.card.name} to…</h2>
+            <h2 className="font-heading text-lg font-semibold">Move {moving.card.name} to…</h2>
             <div className="grid grid-cols-2 gap-2">
               {moving.colours.map((colour) => (
                 <button

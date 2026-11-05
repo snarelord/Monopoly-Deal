@@ -44,7 +44,7 @@ describe("Property pile", () => {
       .and("have.attr", "data-count", "2");
   });
 
-  it.only("completes a set", () => {
+  it("completes a set", () => {
     cy.visit("/local?seed=136");
     drawCards();
     playToProperties("property-mayfair");

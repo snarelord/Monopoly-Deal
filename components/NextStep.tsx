@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ActionPanel, STEP_LABEL, STEP_PANEL } from "@/components/SetupScreen";
 import type { TurnStatus } from "@/lib/gameHelpers";
 import type { Move } from "@/lib/types";
@@ -13,10 +14,21 @@ interface NextStepProps {
 }
 
 const plays = (count: number) => (count === 1 ? "1 play left" : `${count} plays left`);
+const cards = (count: number) => (count === 1 ? "1 card" : `${count} cards`);
 
 // the orange block always shows what happens next: draw, end the turn, discard, or why you're waiting
 export default function NextStep({ turn, myId, names, moveError, discardIds, onDiscard, onMove }: NextStepProps) {
   const isMine = myId === turn.currentPlayerId;
+  // the plays left when End turn was pressed, so playing a card drops the warning by itself
+  const [warnedAt, setWarnedAt] = useState<number | null>(null);
+  const warning = warnedAt === turn.playsLeft && turn.canEndTurn && turn.cardsToDiscard > 0;
+
+  // over the hand limit, ending the turn means a forced discard, so check first if there are plays to use
+  function endTurn() {
+    if (turn.playsLeft > 0 && turn.cardsToDiscard > 0) setWarnedAt(turn.playsLeft);
+    else onMove({ type: "end-turn" });
+  }
+
   const hasNote = turn.winnerId !== null || turn.mustDiscard || turn.owing.length > 0 || moveError !== null;
 
   const usual = turn.canDraw
@@ -57,6 +69,37 @@ export default function NextStep({ turn, myId, names, moveError, discardIds, onD
     </span>
   );
 
+  if (warning) {
+    return (
+      <div className="flex flex-1 flex-col max-md:sticky max-md:bottom-0 max-md:z-20">
+        <button
+          type="button"
+          data-cy="confirm-end-turn"
+          onClick={() => {
+            setWarnedAt(null);
+            onMove({ type: "end-turn" });
+          }}
+          className="min-h-11 cursor-pointer border-2 border-paper/35 bg-primary px-4 py-2 text-left font-heading text-xl leading-none text-paper hover:border-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-highlight"
+        >
+          End turn and discard
+        </button>
+        <ActionPanel
+          type="button"
+          data-cy="keep-playing"
+          onClick={() => setWarnedAt(null)}
+          hint={
+            <span data-cy="discard-warning">
+              {plays(turn.playsLeft)}. End now and you&apos;ll discard {cards(turn.cardsToDiscard)}
+            </span>
+          }
+          label="Keep playing"
+          labelClassName={STEP_LABEL}
+          className={STEP_PANEL}
+        />
+      </div>
+    );
+  }
+
   if (turn.canDraw) {
     return (
       <ActionPanel
@@ -92,7 +135,7 @@ export default function NextStep({ turn, myId, names, moveError, discardIds, onD
       type="button"
       data-cy="end-turn"
       disabled={!turn.canEndTurn}
-      onClick={() => onMove({ type: "end-turn" })}
+      onClick={endTurn}
       hint={hint}
       label={turn.winnerId !== null ? "Game over" : turn.canEndTurn ? "End turn" : "Waiting"}
       labelClassName={STEP_LABEL}

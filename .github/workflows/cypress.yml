@@ -1,9 +1,8 @@
 name: Cypress
 
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   e2e:

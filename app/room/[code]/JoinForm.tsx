@@ -38,7 +38,7 @@ export default function JoinForm({ code, hostName }: { code: string; hostName?: 
         join();
       }}
     >
-      <h1 className="text-2xl font-bold wrap-break-word">{hostName ? `Join ${hostName}'s room` : `Join room ${code}`}</h1>
+      <h1 className="font-heading text-2xl font-bold wrap-break-word">{hostName ? `Join ${hostName}'s room` : `Join room ${code}`}</h1>
       <label className="flex flex-col gap-1 text-sm font-semibold">
         Your name
         <input

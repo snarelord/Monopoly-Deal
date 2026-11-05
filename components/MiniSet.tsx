@@ -17,7 +17,7 @@ export default function MiniSet({
     <>
       <div
         title={colourName(set.colour)}
-        className={`mb-0.5 rounded px-1 text-[0.6rem] font-semibold leading-4 ${COLOUR_STYLES[set.colour]}`}
+        className={`font-heading mb-0.5 rounded px-1 text-[0.6rem] font-semibold leading-4 ${COLOUR_STYLES[set.colour]}`}
       >
         {set.cards.length}/{SETS[set.colour].size}
         {isComplete(set) && " ✓"}

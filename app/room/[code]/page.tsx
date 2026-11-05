@@ -56,7 +56,7 @@ async function Room({ params }: { params: Promise<{ code: string }> }) {
 function NoRoom({ code }: { code: string }) {
   return (
     <Panel data-cy="no-room">
-      <h1 className="text-2xl font-bold">No room {code}</h1>
+      <h1 className="font-heading text-2xl font-bold">No room {code}</h1>
       <p className="text-sm">Check the code. The room may also have closed when its host left.</p>
       <Link href="/online" className="text-sm underline">
         Create or join a room

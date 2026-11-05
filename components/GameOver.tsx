@@ -34,7 +34,7 @@ export default function GameOver({ players, winnerId, onPlayAgain, onClose }: Ga
         aria-label={`${winner.name} wins`}
         className="flex max-h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto rounded-lg bg-white p-5 text-black shadow-xl"
       >
-        <h2 className="text-2xl font-bold wrap-break-word">{winner.name} wins!</h2>
+        <h2 className="font-heading text-2xl font-bold wrap-break-word">{winner.name} wins!</h2>
 
         <section>
           <div className="mb-1 text-xs font-semibold">Winning sets</div>

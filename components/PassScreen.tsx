@@ -8,7 +8,7 @@ export default function PassScreen({ name, onReady }: { name: string; onReady: (
   return (
     <div data-cy="pass-screen" className="fixed inset-0 z-50 grid place-items-center bg-neutral-800 p-4 text-white">
       <div className="flex min-w-0 flex-col items-center gap-4 text-center">
-        <p className="text-2xl font-semibold wrap-break-word">Pass to {name}</p>
+        <p className="font-heading text-2xl font-semibold wrap-break-word">Pass to {name}</p>
         <button
           type="button"
           data-cy="pass-continue"

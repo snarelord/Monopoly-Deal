@@ -28,7 +28,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
         data-cy="game-setup"
         className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow"
       >
-        <h1 className="text-2xl font-bold">Monopoly Deal</h1>
+        <h1 className="font-heading text-2xl font-bold">Monopoly Deal</h1>
 
         <fieldset>
           <legend className="mb-2 text-sm font-semibold">How many players?</legend>

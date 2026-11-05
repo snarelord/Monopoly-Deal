@@ -35,7 +35,7 @@ export default function OnlinePage() {
   return (
     <main className="grid min-h-dvh place-items-center p-4">
       <div className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-black/20 bg-white/70 p-6 text-black shadow">
-        <h1 className="text-2xl font-bold">Play online</h1>
+        <h1 className="font-heading text-2xl font-bold">Play online</h1>
 
         <label className="flex flex-col gap-1 text-sm font-semibold">
           Your name

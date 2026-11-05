@@ -62,7 +62,7 @@ export default function PaymentPanel({ me, amount, toName, onMove }: PaymentPane
         className="flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
       >
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-lg font-semibold">
+          <h2 className="font-heading text-lg font-semibold">
             Pay {toName} {amount}M
           </h2>
           <span data-cy="pay-total" data-total={total} className={total >= amount ? "text-green-700" : ""}>

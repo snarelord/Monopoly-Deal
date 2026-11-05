@@ -48,7 +48,7 @@ export default function ResponsePanel({ me, pendingCard, effect, debt, names, on
         aria-label="Just Say No?"
         className="flex w-full max-w-md flex-col gap-3 rounded-lg bg-white p-4 text-black shadow-xl"
       >
-        <h2 className="text-lg font-semibold">{heading}</h2>
+        <h2 className="font-heading text-lg font-semibold">{heading}</h2>
         <p className="text-sm text-black/70">
           {!sayNo
             ? `You don't have a Just Say No, so ${countering ? "theirs stands" : effect.kind === "pay" ? "you'll have to pay" : "it goes ahead"}.`

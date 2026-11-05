@@ -26,7 +26,7 @@ export default function PlayerBank({ playerId, cards }: PlayerBankProps) {
       data-total={total}
       className="flex h-full w-full flex-col rounded-lg border border-black/20 bg-white/60 p-3 text-black"
     >
-      <div className="mb-2 flex justify-between text-sm font-semibold">
+      <div className="font-heading mb-2 flex justify-between text-sm font-semibold">
         <span>Bank</span>
         <span>{total}M</span>
       </div>

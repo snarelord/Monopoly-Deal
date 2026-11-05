@@ -5,19 +5,22 @@
   --foreground: #171717;
   /* one source of truth for card size: shrinks with the window, between 3.5rem and 8rem */
   --card-w: clamp(3.5rem, min(7.5vw, 13dvh), 8rem);
-  /* shape of the card artwork (702 x 1089), so backs and empty slots match the faces */
-  --card-ratio: 702 / 1089;
+  /* shape of the card artwork (1260 x 1760), so backs and empty slots match the faces */
+  --card-ratio: 1260 / 1760;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-heading: var(--font-bebas-neue), Arial, Helvetica, sans-serif;
 }
 
 body {
   background: #c4c4c4;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  /* both fonts are loaded in regular only, so don't let bold classes fake a weight */
+  font-synthesis-weight: none;
 }
 
 
@@ -103,7 +106,7 @@ body {
   position: relative;
   z-index: 1;
   /* 20rem, but never wider than the screen or taller than ~85% of it */
-  width: min(20rem, 85vw, 85dvh * 702 / 1089);
+  width: min(20rem, 85vw, 85dvh * var(--card-ratio));
 
   animation: card-zoom-in 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }

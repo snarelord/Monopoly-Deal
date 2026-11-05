@@ -76,6 +76,7 @@ describe("Turns", () => {
     drawCards(); endTurn(); takeSeat();   // player 2: 7 cards
     drawCards();              // player 1 again: 9 cards
     endTurn();
+    cy.get('[data-cy="confirm-end-turn"]').click();
 
     cy.get('[data-cy="discard-prompt"]').should("contain.text", "Discard 2 cards");
     cy.get('[data-cy="end-turn"]').should("not.exist");
@@ -85,5 +86,41 @@ describe("Turns", () => {
     cy.get('[data-cy="my-hand"] [data-cy="card"]').eq(1).click({ force: true });
     cy.get('[data-cy="discard-step"]').click();
     cy.get(info).should("have.attr", "data-player", "1").and("have.attr", "data-turn", "4");
+  });
+
+  it("warns me before discarding if I still have plays left, and lets me carry on", () => {
+    drawCards(); endTurn(); takeSeat();
+    drawCards(); endTurn(); takeSeat();
+    drawCards();              // player 1 again: 9 cards
+    endTurn();
+
+    cy.get('[data-cy="discard-warning"]').should("contain.text", "3 plays left").and("contain.text", "discard 2 cards");
+    cy.get('[data-cy="discard-prompt"]').should("not.exist");
+    cy.get('[data-cy="keep-playing"]').click();
+
+    cy.get('[data-cy="discard-warning"]').should("not.exist");
+    cy.get('[data-cy="end-turn"]').should("not.be.disabled");
+    cy.get(info).should("have.attr", "data-player", "0").and("have.attr", "data-plays-left", "3");
+    bankFirstCard();
+    cy.get(info).should("have.attr", "data-plays-left", "2");
+  });
+
+  it("drops the warning when I play a card instead of answering it", () => {
+    drawCards(); endTurn(); takeSeat();
+    drawCards(); endTurn(); takeSeat();
+    drawCards();
+    endTurn();
+    cy.get('[data-cy="discard-warning"]').should("exist");
+
+    bankFirstCard();
+    cy.get('[data-cy="discard-warning"]').should("not.exist");
+    cy.get('[data-cy="end-turn"]').should("not.be.disabled");
+  });
+
+  it("doesn't warn me when I'm not over the hand limit", () => {
+    drawCards();              // 7 cards
+    endTurn();
+    takeSeat();
+    cy.get(info).should("have.attr", "data-player", "1");
   });
 });

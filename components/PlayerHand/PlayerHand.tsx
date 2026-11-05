@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useRef } from "react";
+import { motion } from "motion/react";
 import type { CSSProperties } from "react";
 import type { Card as CardType, Move, OpponentView, Player } from "../../lib/types";
 import type { TurnStatus } from "../../lib/gameHelpers";
@@ -82,7 +83,12 @@ export default function PlayerHand({
           const isSelected = isDiscarding ? discardIds.includes(card.id) : card.id === selectedId;
           return (
             <li key={card.id} className={`hand-slot ${isSelected ? "is-selected" : ""}`}>
-              <div className="hand-card">
+              <motion.div
+                className="hand-card"
+                layout="position"
+                layoutDependency={`${cards.length}-${spacing}`}
+                transition={{ type: "spring", stiffness: 400, damping: 36 }}
+              >
                 <button
                   type="button"
                   className="card-button"
@@ -110,7 +116,7 @@ export default function PlayerHand({
                     onClose={() => setSelectedId(null)}
                   />
                 )}
-              </div>
+              </motion.div>
             </li>
           );
         })}

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import SetupScreen, { PANEL, QUIET_LINK } from "@/components/SetupScreen";
+import BackLink from "@/components/BackLink";
+import SetupScreen, { PANEL } from "@/components/SetupScreen";
 import { COLOUR_STYLES, colourName } from "@/components/colourStyles";
 import { BIRTHDAY_AMOUNT, DEBT_COLLECTOR_AMOUNT, HAND_LIMIT, PLAYS_PER_TURN, SETS_TO_WIN } from "@/lib/gameHelpers";
 import { HOTEL_RENT, HOUSE_RENT } from "@/lib/rent";
@@ -125,6 +125,7 @@ export default function Rules() {
     <SetupScreen
       data-cy="rules"
       fit={6.25}
+      back="/"
       title={
         <>
           How to play <span className="text-highlight">[</span>Deal<span className="text-highlight">]</span>
@@ -137,9 +138,6 @@ export default function Rules() {
           someone does. This is the vanilla win objective, custom rules can alter this.
         </p>
         <p className="leading-snug text-paper/80">Each player is dealt 5 cards to begin, then takes turns.</p>
-        <Link href="/" className={QUIET_LINK}>
-          Back
-        </Link>
       </Panel>
 
       <Panel title="Your turn" className="bg-secondary">
@@ -205,9 +203,7 @@ export default function Rules() {
             <li key={line} className="py-2">{line}</li>
           ))}
         </ul>
-        <Link href="/" className={QUIET_LINK}>
-          Back
-        </Link>
+        <BackLink />
       </section>
     </SetupScreen>
   );

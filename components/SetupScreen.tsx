@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import BackLink from "@/components/BackLink";
 import Stripe from "@/components/Stripe";
 
 interface SetupScreenProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
@@ -6,6 +7,7 @@ interface SetupScreenProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
   fit: number; // how wide the title is in ems, so it can fill the screen
   as?: "main" | "div";
   columns?: string;
+  back?: string; // where the back link goes, if there is one
   "data-cy"?: string;
 }
 
@@ -30,21 +32,26 @@ export const STEP_LABEL = "shrink-0 font-heading text-[clamp(48px,5vw,84px)] lea
 export const STEP_PANEL =
   "flex-1 [--gutter:1rem] max-md:sticky max-md:bottom-0 max-md:z-20 max-md:min-h-0 max-md:flex-row max-md:items-center max-md:py-2";
 
+// the back link takes up height, so on short desktop windows the title shrinks to keep the panels on screen
+const BACK_TITLE_CAP = "lg:[--title-cap:max(3rem,min(50dvh,calc(125dvh-38.5rem)))]";
+
 export default function SetupScreen({
   title,
   fit,
   as: Tag = "main",
   className = "min-h-dvh overflow-clip",
   columns = "lg:grid-cols-[minmax(0,5fr)_minmax(0,3fr)_minmax(0,4fr)]",
+  back,
   children,
   ...props
 }: SetupScreenProps) {
   return (
     <Tag {...props} className={`@container flex flex-col bg-primary text-paper [--gutter:clamp(16px,2.5vw,36px)] ${className}`}>
-      <header className="px-(--gutter) pt-[clamp(16px,2.5vw,32px)]">
+      <header className={`px-(--gutter) pt-[clamp(8px,1.2vw,16px)] ${back ? BACK_TITLE_CAP : ""}`}>
+        {back && <BackLink href={back} className="mb-[clamp(4px,0.8vw,12px)]" />}
         <h1
           className="font-heading leading-[0.8] whitespace-nowrap"
-          style={{ fontSize: `min(calc((100cqw - 2 * var(--gutter)) / ${fit}), 50dvh)` }}
+          style={{ fontSize: `min(calc((100cqw - 2 * var(--gutter)) / ${fit}), var(--title-cap, 50dvh))` }}
         >
           {title}
         </h1>

@@ -74,6 +74,10 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
         <Link href="/online" data-cy="play-online" className={`mt-auto ${QUIET_LINK}`}>
           Play online instead
         </Link>
+        <Link href="/" className={QUIET_LINK}>
+          Back
+        </Link>
+        
       </div>
 
       <div className={BLUE_PANEL}>

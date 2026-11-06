@@ -57,6 +57,9 @@ export default function OnlinePage() {
         <Link href="/local" className={`mt-auto ${QUIET_LINK}`}>
           Play local instead
         </Link>
+        <Link href="/" className={QUIET_LINK}>
+          Back
+        </Link>
       </div>
 
       <form

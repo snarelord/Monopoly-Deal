@@ -34,7 +34,7 @@ export default function OnlinePage() {
   }
 
   return (
-    <SetupScreen title="Play online" fit={3.82}>
+    <SetupScreen title="Play online" fit={3.82} back="/">
       <div className={PANEL}>
         <label className="flex flex-col gap-3">
           <span className={LABEL}>Your name</span>
@@ -56,9 +56,6 @@ export default function OnlinePage() {
 
         <Link href="/local" className={`mt-auto ${QUIET_LINK}`}>
           Play local instead
-        </Link>
-        <Link href="/" className={QUIET_LINK}>
-          Back
         </Link>
       </div>
 

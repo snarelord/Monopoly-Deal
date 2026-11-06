@@ -14,6 +14,14 @@ describe("Landing page", () => {
     });
   });
 
+  ["/local", "/online", "/rules", "/about"].forEach((page) => {
+    it(`comes back from ${page}`, () => {
+      cy.visit(page);
+      cy.get('[data-cy="back"]').first().click();
+      cy.get('[data-cy="landing"]').should("exist");
+    });
+  });
+
   it("opens game setup from play local", () => {
     cy.get('[data-cy="play-local"]').click();
     cy.get('[data-cy="game-setup"]').should("exist");

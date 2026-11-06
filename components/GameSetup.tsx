@@ -24,7 +24,7 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
   const sameName = new Set(names.map((name) => name.toLowerCase())).size < names.length;
 
   return (
-    <SetupScreen data-cy="game-setup" title="Play local" fit={3.54}>
+    <SetupScreen data-cy="game-setup" title="Play local" fit={3.54} back="/">
       <div className={PANEL}>
         <fieldset className="min-w-0">
           <legend className={`${LABEL} mb-3`}>How many players?</legend>
@@ -74,10 +74,6 @@ export default function GameSetup({ initialNames, initialPassScreens, onDeal }: 
         <Link href="/online" data-cy="play-online" className={`mt-auto ${QUIET_LINK}`}>
           Play online instead
         </Link>
-        <Link href="/" className={QUIET_LINK}>
-          Back
-        </Link>
-        
       </div>
 
       <div className={BLUE_PANEL}>
